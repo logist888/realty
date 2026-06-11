@@ -9,7 +9,7 @@
     </div>
   <% } %>
 
-  <form method="post" enctype="multipart/form-data" class="offer-form">
+  <form method="post" enctype="multipart/form-data" class="offer-form" id="offer-form">
     <fieldset>
       <legend>Тип</legend>
       <div class="form-row">
@@ -21,7 +21,7 @@
           </select>
         </label>
         <label>Недвижимость
-          <select name="offer_type" class="input" required>
+          <select name="offer_type" class="input" id="offer-type" required>
             <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
               <option value="<%= val %>" <%= values.offer_type === val ? 'selected' : '' %>><%= label %></option>
             <% }) %>
@@ -34,7 +34,7 @@
       <legend>Адрес</legend>
       <div class="form-row">
         <label>Город *
-          <input list="cities" name="city" class="input" required value="<%= values.city || '' %>" placeholder="Москва">
+          <input list="cities" name="city" id="city-input" class="input" required value="<%= values.city || '' %>" placeholder="Москва">
           <datalist id="cities">
             <% Object.keys(h.CITIES).forEach(c => { %><option value="<%= c %>"><% }) %>
           </datalist>
@@ -43,9 +43,17 @@
           <input name="district" class="input" value="<%= values.district || '' %>" placeholder="ЦАО">
         </label>
       </div>
-      <label>Улица, дом *
-        <input name="address" class="input" required value="<%= values.address || '' %>" placeholder="ул. Ленина, д. 10">
+      <label class="suggest-wrap">Улица, дом *
+        <input name="address" id="address-input" class="input" required autocomplete="off"
+               value="<%= values.address || '' %>" placeholder="Начните вводить: ул. Ленина, 10">
+        <div class="suggest-list" id="address-suggest" hidden></div>
+        <span class="muted">Выберите адрес из подсказок — тогда объект появится на карте в точном месте</span>
       </label>
+      <input type="hidden" name="lat" id="lat-input" value="<%= values.lat || '' %>">
+      <input type="hidden" name="lng" id="lng-input" value="<%= values.lng || '' %>">
+      <div class="geo-status muted" id="geo-status" <%= values.lat ? '' : 'hidden' %>>
+        📍 Координаты определены: <span id="geo-coords"><%= values.lat ? Number(values.lat).toFixed(5) + ', ' + Number(values.lng).toFixed(5) : '' %></span>
+      </div>
       <div class="form-row">
         <label>Метро
           <input name="metro" class="input" value="<%= values.metro || '' %>" placeholder="Арбатская">
@@ -58,35 +66,73 @@
 
     <fieldset>
       <legend>Параметры</legend>
-      <div class="form-row">
+
+      <div class="form-row" data-types="flat,room,house">
         <label>Комнат (0 — студия)
           <input type="number" name="rooms" class="input" min="0" max="20" value="<%= values.rooms != null ? values.rooms : 1 %>">
         </label>
-        <label>Общая площадь, м² *
-          <input type="number" name="area_total" class="input" required min="1" step="0.1" value="<%= values.area_total || '' %>">
-        </label>
-      </div>
-      <div class="form-row">
         <label>Жилая площадь, м²
           <input type="number" name="area_living" class="input" min="1" step="0.1" value="<%= values.area_living || '' %>">
         </label>
-        <label>Кухня, м²
+      </div>
+
+      <div class="form-row">
+        <label>Общая площадь, м² *
+          <input type="number" name="area_total" class="input" required min="0.5" step="0.1" value="<%= values.area_total || '' %>">
+        </label>
+        <label data-types="flat,room">Кухня, м²
           <input type="number" name="area_kitchen" class="input" min="1" step="0.1" value="<%= values.area_kitchen || '' %>">
         </label>
       </div>
-      <div class="form-row">
-        <label>Этаж
-          <input type="number" name="floor" class="input" min="1" max="100" value="<%= values.floor || '' %>">
+
+      <div class="form-row" data-types="commercial">
+        <label>Назначение помещения
+          <select name="purpose" class="input">
+            <option value="">Не указано</option>
+            <% h.PURPOSES.forEach(p => { %>
+              <option value="<%= p %>" <%= values.purpose === p ? 'selected' : '' %>><%= p %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="checkbox-label checkbox-inline">
+          <input type="checkbox" name="separate_entrance" value="1" <%= values.separate_entrance ? 'checked' : '' %>> Отдельный вход
+        </label>
+      </div>
+
+      <div class="form-row" data-types="parking">
+        <label>Тип паркинга
+          <select name="parking_type" class="input">
+            <option value="">Не указан</option>
+            <% h.PARKING_TYPES.forEach(p => { %>
+              <option value="<%= p %>" <%= values.parking_type === p ? 'selected' : '' %>><%= p %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-row" data-types="flat,room,commercial,storage,parking">
+        <label>Этаж <span class="muted">(−1…−10 — подземные, 0 — цоколь)</span>
+          <input type="number" name="floor" class="input" min="-10" max="100" value="<%= values.floor != null ? values.floor : '' %>">
         </label>
         <label>Этажей в доме
           <input type="number" name="floors_total" class="input" min="1" max="100" value="<%= values.floors_total || '' %>">
         </label>
       </div>
+
+      <div class="form-row" data-types="commercial,storage,parking">
+        <label>Высота потолков, м
+          <input type="number" name="ceiling_height" class="input" min="1" max="20" step="0.1" value="<%= values.ceiling_height || '' %>">
+        </label>
+        <label class="checkbox-label checkbox-inline">
+          <input type="checkbox" name="security" value="1" <%= values.security ? 'checked' : '' %>> Охрана / видеонаблюдение
+        </label>
+      </div>
+
       <div class="form-row">
-        <label>Год постройки
+        <label data-types="flat,room,house,commercial">Год постройки
           <input type="number" name="build_year" class="input" min="1850" max="2030" value="<%= values.build_year || '' %>">
         </label>
-        <label>Ремонт
+        <label data-types="flat,room,house,commercial">Ремонт
           <select name="renovation" class="input">
             <option value="">Не указан</option>
             <% h.RENOVATIONS.forEach(r => { %>
@@ -95,7 +141,8 @@
           </select>
         </label>
       </div>
-      <label class="checkbox-label">
+
+      <label class="checkbox-label" data-types="flat,room">
         <input type="checkbox" name="balcony" value="1" <%= values.balcony ? 'checked' : '' %>> Балкон или лоджия
       </label>
     </fieldset>
@@ -106,14 +153,23 @@
         <input type="number" name="price" class="input" required min="1" value="<%= values.price || '' %>">
       </label>
       <label>Описание
-        <textarea name="description" class="input" rows="6" placeholder="Расскажите о недвижимости: состояние, инфраструктура, условия сделки..."><%= values.description || '' %></textarea>
+        <textarea name="description" class="input" rows="6" placeholder="Расскажите об объекте: состояние, инфраструктура, условия сделки..."><%= values.description || '' %></textarea>
       </label>
     </fieldset>
 
     <fieldset>
       <legend>Фотографии</legend>
-      <input type="file" name="photos" accept="image/*" multiple class="input">
-      <p class="muted">До 10 фото, JPG/PNG/WebP, до 8 МБ каждое.
+      <div class="dropzone" id="dropzone" tabindex="0" role="button"
+           aria-label="Загрузить фотографии">
+        <input type="file" name="photos" id="photos-input" accept="image/*" multiple hidden>
+        <div class="dropzone-hint">
+          <div class="dropzone-icon">🖼️</div>
+          <strong>Перетащите фото сюда</strong> или нажмите, чтобы выбрать<br>
+          <span class="muted">Можно сразу несколько. До 10 фото, JPG/PNG/WebP, до 8 МБ каждое.</span>
+        </div>
+      </div>
+      <div class="photo-previews" id="photo-previews"></div>
+      <p class="muted">
         <% if (!offer) { %>Если не добавить фото, будут использованы заглушки.<% } else { %>Новые фото добавятся к существующим.<% } %>
       </p>
     </fieldset>

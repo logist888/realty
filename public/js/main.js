@@ -71,6 +71,210 @@
     recalc();
   }
 
+  // --- Карта на странице объявления (Leaflet + OpenStreetMap) ---
+  const mapEl = document.getElementById('map');
+  if (mapEl && window.L) {
+    const lat = Number(mapEl.dataset.lat);
+    const lng = Number(mapEl.dataset.lng);
+    const map = L.map(mapEl, { scrollWheelZoom: false }).setView([lat, lng], 16);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+      .bindPopup(`<strong>${mapEl.dataset.title}</strong><br>${mapEl.dataset.address}`);
+  }
+
+  // --- Автоподсказки адреса (геокодер Photon / OpenStreetMap) ---
+  const addressInput = document.getElementById('address-input');
+  const suggestBox = document.getElementById('address-suggest');
+  if (addressInput && suggestBox) {
+    const cityInput = document.getElementById('city-input');
+    const latInput = document.getElementById('lat-input');
+    const lngInput = document.getElementById('lng-input');
+    const geoStatus = document.getElementById('geo-status');
+    let debounceTimer = null;
+    let abortCtrl = null;
+    let selecting = false;
+
+    function setCoords(lat, lng) {
+      latInput.value = lat || '';
+      lngInput.value = lng || '';
+      if (lat) {
+        document.getElementById('geo-coords').textContent =
+          Number(lat).toFixed(5) + ', ' + Number(lng).toFixed(5);
+        geoStatus.hidden = false;
+      } else {
+        geoStatus.hidden = true;
+      }
+    }
+
+    function labelFor(props) {
+      const street = [props.street || props.name, props.housenumber].filter(Boolean).join(', ');
+      const place = [props.city || props.county, props.state].filter(Boolean).join(', ');
+      return { street, place };
+    }
+
+    async function fetchSuggestions(query) {
+      if (abortCtrl) abortCtrl.abort();
+      abortCtrl = new AbortController();
+      const cityPart = cityInput && cityInput.value ? cityInput.value + ', ' : '';
+      const url = 'https://photon.komoot.io/api/?limit=6&lang=default&q=' +
+        encodeURIComponent(cityPart + query);
+      try {
+        const res = await fetch(url, { signal: abortCtrl.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        renderSuggestions(data.features || []);
+      } catch (_) { /* геокодер недоступен — ввод остаётся ручным */ }
+    }
+
+    function renderSuggestions(features) {
+      suggestBox.innerHTML = '';
+      const usable = features.filter(f => f.geometry && f.properties);
+      if (!usable.length) { suggestBox.hidden = true; return; }
+      usable.forEach((f) => {
+        const { street, place } = labelFor(f.properties);
+        if (!street) return;
+        const item = document.createElement('div');
+        item.className = 'suggest-item';
+        item.innerHTML = `<span class="suggest-street"></span> <span class="suggest-place"></span>`;
+        item.querySelector('.suggest-street').textContent = street;
+        item.querySelector('.suggest-place').textContent = place;
+        item.addEventListener('mousedown', () => {
+          selecting = true;
+          addressInput.value = street;
+          if (cityInput && !cityInput.value && f.properties.city) cityInput.value = f.properties.city;
+          const [lng, lat] = f.geometry.coordinates;
+          setCoords(lat, lng);
+          suggestBox.hidden = true;
+          setTimeout(() => { selecting = false; }, 100);
+        });
+        suggestBox.appendChild(item);
+      });
+      suggestBox.hidden = suggestBox.children.length === 0;
+    }
+
+    addressInput.addEventListener('input', () => {
+      if (selecting) return;
+      setCoords('', ''); // адрес изменён вручную — старые координаты недействительны
+      clearTimeout(debounceTimer);
+      const query = addressInput.value.trim();
+      if (query.length < 3) { suggestBox.hidden = true; return; }
+      debounceTimer = setTimeout(() => fetchSuggestions(query), 300);
+    });
+    addressInput.addEventListener('blur', () => {
+      setTimeout(() => { suggestBox.hidden = true; }, 150);
+    });
+    addressInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') suggestBox.hidden = true;
+    });
+  }
+
+  // --- Поля формы объявления, зависящие от типа недвижимости ---
+  const offerTypeSelect = document.getElementById('offer-type');
+  if (offerTypeSelect) {
+    function applyTypeVisibility() {
+      const type = offerTypeSelect.value;
+      document.querySelectorAll('#offer-form [data-types]').forEach((el) => {
+        el.hidden = !el.dataset.types.split(',').includes(type);
+      });
+    }
+    offerTypeSelect.addEventListener('change', applyTypeVisibility);
+    applyTypeVisibility();
+  }
+
+  // --- Drag & drop загрузка фотографий с превью ---
+  const dropzone = document.getElementById('dropzone');
+  if (dropzone) {
+    const input = document.getElementById('photos-input');
+    const previews = document.getElementById('photo-previews');
+    const store = new DataTransfer();
+    const MAX_FILES = 10;
+    const MAX_SIZE = 8 * 1024 * 1024;
+
+    function syncInput() {
+      input.files = store.files;
+    }
+
+    function renderPreviews() {
+      previews.innerHTML = '';
+      Array.from(store.files).forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-preview';
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'photo-remove';
+        remove.textContent = '×';
+        remove.title = 'Убрать фото';
+        remove.addEventListener('click', () => {
+          const dt = new DataTransfer();
+          Array.from(store.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
+          store.items.clear();
+          Array.from(dt.files).forEach(f => store.items.add(f));
+          syncInput();
+          renderPreviews();
+        });
+        item.appendChild(img);
+        item.appendChild(remove);
+        previews.appendChild(item);
+      });
+    }
+
+    function addFiles(fileList) {
+      let rejected = 0;
+      Array.from(fileList).forEach((file) => {
+        if (store.files.length >= MAX_FILES) { rejected++; return; }
+        if (!file.type.startsWith('image/') || file.size > MAX_SIZE) { rejected++; return; }
+        store.items.add(file);
+      });
+      syncInput();
+      renderPreviews();
+      if (rejected) {
+        dropzone.classList.add('dropzone-error');
+        setTimeout(() => dropzone.classList.remove('dropzone-error'), 1200);
+      }
+    }
+
+    dropzone.addEventListener('click', () => input.click());
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', () => {
+      // файлы из диалога добавляем к уже выбранным, а не заменяем
+      const chosen = Array.from(input.files);
+      input.value = '';
+      addFiles(chosen);
+    });
+    ['dragenter', 'dragover'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dropzone-over');
+      }));
+    ['dragleave', 'drop'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dropzone-over');
+      }));
+    dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    });
+  }
+
+  // --- Фильтр «Комнат» скрывается для нежилых типов ---
+  const searchType = document.getElementById('search-type');
+  const roomsGroup = document.getElementById('rooms-group');
+  if (searchType && roomsGroup && window.NON_RESIDENTIAL) {
+    searchType.addEventListener('change', () => {
+      const hide = window.NON_RESIDENTIAL.includes(searchType.value);
+      roomsGroup.hidden = hide;
+      if (hide) roomsGroup.querySelectorAll('input:checked').forEach(cb => { cb.checked = false; });
+    });
+  }
+
   // --- Динамическая подстановка районов и метро при смене города ---
   const citySelect = document.getElementById('city-select');
   if (citySelect && window.CITY_DATA) {

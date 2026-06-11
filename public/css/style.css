@@ -246,6 +246,50 @@ h2 { font-size: 22px; margin: 14px 0; }
 .checkbox-label { display: flex !important; align-items: center; gap: 8px; }
 .checkbox-label input { width: auto; }
 
+/* Автоподсказки адреса */
+.suggest-wrap { position: relative; }
+.suggest-list {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, .16); max-height: 260px; overflow-y: auto;
+}
+.suggest-item { padding: 10px 14px; cursor: pointer; font-weight: 400; }
+.suggest-item:hover { background: #eef4ff; }
+.suggest-street { font-weight: 600; }
+.suggest-place { color: var(--muted); font-size: 13px; }
+.geo-status { margin: -6px 0 12px; font-size: 13px; color: var(--green) !important; }
+
+/* Drag & drop загрузка фото */
+.dropzone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 28px 18px; text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s; background: #fafbfc;
+}
+.dropzone:hover, .dropzone:focus { border-color: var(--blue); outline: none; }
+.dropzone-over { border-color: var(--blue); background: #eef4ff; }
+.dropzone-error { border-color: var(--red); background: #fef2f2; }
+.dropzone-icon { font-size: 32px; margin-bottom: 6px; }
+.dropzone-hint { font-weight: 400; }
+.photo-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.photo-preview { position: relative; }
+.photo-preview img {
+  width: 110px; height: 82px; object-fit: cover; border-radius: 8px; display: block;
+  border: 1px solid var(--border);
+}
+.photo-remove {
+  position: absolute; top: -8px; right: -8px; width: 24px; height: 24px;
+  border-radius: 50%; border: none; background: var(--red); color: #fff;
+  font-size: 16px; line-height: 1; cursor: pointer; box-shadow: var(--shadow);
+}
+.checkbox-inline { align-self: end; padding-bottom: 10px; }
+
+/* Карта на странице объявления */
+.offer-map {
+  height: 360px; border-radius: var(--radius); box-shadow: var(--shadow);
+  background: #e8ecf1; z-index: 1;
+}
+.map-fallback { margin-top: 10px; color: var(--muted); font-size: 14px; }
+
 .alert { border-radius: 8px; padding: 12px 16px; margin: 12px 0; }
 .alert-error { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
 .alert-warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }

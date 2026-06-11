@@ -2,7 +2,7 @@
 // Запуск: npm run seed
 const db = require('./db');
 const { hashPassword } = require('./auth');
-const { CITIES, RENOVATIONS } = require('./helpers');
+const { CITIES, RENOVATIONS, PURPOSES, PARKING_TYPES } = require('./helpers');
 
 const offersCount = db.prepare('SELECT COUNT(*) AS c FROM offers').get().c;
 if (offersCount > 0) {
@@ -28,6 +28,13 @@ const userIds = demoUsers.map(([email, name, phone, isAgent]) =>
 const STREETS = ['Ленина', 'Садовая', 'Лесная', 'Центральная', 'Мира', 'Пушкина',
   'Гагарина', 'Набережная', 'Солнечная', 'Парковая', 'Молодёжная', 'Зелёная'];
 
+const NON_RES_DESCRIPTIONS = [
+  'Сухое отапливаемое помещение с круглосуточным доступом. Видеонаблюдение, охрана на въезде в паркинг.',
+  'Удобный заезд, широкие проезды. Помещение в собственности, документы готовы к сделке.',
+  'Закрытая территория жилого комплекса, доступ по ключ-карте. Рядом лифт, удобно спускаться из квартиры.',
+  'Помещение с хорошей вентиляцией и освещением. Возможна долгосрочная аренда со скидкой.',
+];
+
 const DESCRIPTIONS = [
   'Светлая и уютная квартира с продуманной планировкой. Окна выходят во двор, тихо. Развитая инфраструктура: школы, детские сады, магазины в шаговой доступности.',
   'Отличное состояние, заезжай и живи. Остаётся вся мебель и техника. Закрытый двор, консьерж, подземный паркинг.',
@@ -40,49 +47,80 @@ const DESCRIPTIONS = [
 const insertOffer = db.prepare(`
   INSERT INTO offers (user_id, deal_type, offer_type, title, description, price, rooms,
     area_total, area_living, area_kitchen, floor, floors_total, build_year,
-    city, district, address, metro, metro_minutes, lat, lng, renovation, balcony, created_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?))`);
+    city, district, address, metro, metro_minutes, lat, lng, renovation, balcony,
+    purpose, parking_type, ceiling_height, security, separate_entrance, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?))`);
 const insertPhoto = db.prepare('INSERT INTO photos (offer_id, url, position) VALUES (?, ?, ?)');
 
 const seedAll = db.transaction(() => {
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 180; i++) {
     const city = pick(Object.keys(CITIES));
     const cityInfo = CITIES[city];
     const dealType = pick(['sale', 'sale', 'sale', 'rent_long', 'rent_long', 'rent_daily']);
-    const offerType = pick(['flat', 'flat', 'flat', 'flat', 'room', 'house', 'commercial']);
+    // Акцент на нежилые: коммерческие, кладовые и машиноместа — около половины базы
+    const offerType = pick(['flat', 'flat', 'flat', 'room', 'house',
+      'commercial', 'commercial', 'storage', 'storage', 'parking', 'parking']);
+    const nonRes = ['commercial', 'storage', 'parking'].includes(offerType);
 
-    const rooms = offerType === 'room' ? 1 : pick([0, 1, 1, 2, 2, 3, 3, 4, 5]);
+    const rooms = nonRes ? 0 : offerType === 'room' ? 1 : pick([0, 1, 1, 2, 2, 3, 3, 4, 5]);
     let areaTotal;
     if (offerType === 'house') areaTotal = rand(80, 350);
     else if (offerType === 'room') areaTotal = rand(10, 25);
     else if (offerType === 'commercial') areaTotal = rand(30, 500);
+    else if (offerType === 'storage') areaTotal = rand(2, 14);
+    else if (offerType === 'parking') areaTotal = rand(12, 20);
     else areaTotal = rooms === 0 ? rand(22, 35) : 18 + rooms * rand(14, 22);
 
-    // Цена за м² зависит от города и типа сделки
+    // Цена за м² зависит от города, типа объекта и сделки
     const cityFactor = city === 'Москва' ? 1 : city === 'Санкт-Петербург' ? 0.7 : 0.4;
     let price;
-    if (dealType === 'sale') price = Math.round(areaTotal * rand(180, 420) * 1000 * cityFactor / 10000) * 10000;
-    else if (dealType === 'rent_long') price = Math.round(areaTotal * rand(900, 2200) * cityFactor / 1000) * 1000;
-    else price = Math.round(areaTotal * rand(120, 300) * cityFactor / 100) * 100;
+    if (offerType === 'storage') {
+      price = dealType === 'sale'
+        ? Math.round(rand(250, 1200) * 1000 * cityFactor / 10000) * 10000
+        : Math.round(rand(1500, 7000) * cityFactor / 100) * 100;
+    } else if (offerType === 'parking') {
+      price = dealType === 'sale'
+        ? Math.round(rand(700, 4000) * 1000 * cityFactor / 10000) * 10000
+        : Math.round(rand(3000, 15000) * cityFactor / 100) * 100;
+    } else if (dealType === 'sale') {
+      price = Math.round(areaTotal * rand(180, 420) * 1000 * cityFactor / 10000) * 10000;
+    } else if (dealType === 'rent_long') {
+      price = Math.round(areaTotal * rand(900, 2200) * cityFactor / 1000) * 1000;
+    } else {
+      price = Math.round(areaTotal * rand(120, 300) * cityFactor / 100) * 100;
+    }
 
+    // Этажи: кладовые и машиноместа — подземные (-3..-1), коммерческие — включая цоколь (0)
     const floorsTotal = offerType === 'house' ? rand(1, 3) : rand(5, 30);
-    const floor = offerType === 'house' ? null : rand(1, floorsTotal);
+    let floor;
+    if (offerType === 'house') floor = null;
+    else if (offerType === 'storage' || offerType === 'parking') floor = rand(-3, -1);
+    else if (offerType === 'commercial') floor = pick([-1, 0, 0, 1, 1, 1, 2]);
+    else floor = rand(1, floorsTotal);
+
     const [clat, clng] = cityInfo.center;
 
     const offerId = insertOffer.run(
-      pick(userIds), dealType, offerType, '', pick(DESCRIPTIONS), price, rooms,
-      areaTotal,
+      pick(userIds), dealType, offerType, '',
+      nonRes ? pick(NON_RES_DESCRIPTIONS) : pick(DESCRIPTIONS),
+      price, rooms, areaTotal,
       offerType === 'flat' ? Math.round(areaTotal * 0.55) : null,
       offerType === 'flat' ? rand(6, 20) : null,
       floor, offerType === 'house' ? null : floorsTotal,
-      rand(1960, 2025),
+      offerType === 'storage' || offerType === 'parking' ? null : rand(1960, 2025),
       city, pick(cityInfo.districts),
       `ул. ${pick(STREETS)}, д. ${rand(1, 120)}`,
       offerType === 'house' ? '' : pick(cityInfo.metro),
       offerType === 'house' ? null : rand(2, 25),
       clat + (Math.random() - 0.5) * 0.25,
       clng + (Math.random() - 0.5) * 0.4,
-      pick(RENOVATIONS), pick([0, 1, 1]),
+      nonRes ? '' : pick(RENOVATIONS),
+      nonRes ? 0 : pick([0, 1, 1]),
+      offerType === 'commercial' ? pick(PURPOSES) : '',
+      offerType === 'parking' ? pick(PARKING_TYPES) : '',
+      nonRes ? rand(22, 45) / 10 : null,
+      nonRes ? pick([0, 1, 1]) : 0,
+      offerType === 'commercial' ? pick([0, 1]) : 0,
       `-${rand(0, 45)} days`,
     ).lastInsertRowid;
 
@@ -94,5 +132,5 @@ const seedAll = db.transaction(() => {
 });
 seedAll();
 
-console.log('Готово: 5 пользователей (пароль demo1234), 150 объявлений.');
+console.log('Готово: 5 пользователей (пароль demo1234), 180 объявлений.');
 console.log('Демо-аккаунт: demo@realty.local / demo1234');

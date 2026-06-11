@@ -17,7 +17,7 @@
 
       <div class="filter-group">
         <label class="filter-label">Недвижимость</label>
-        <select name="type" class="input">
+        <select name="type" class="input" id="search-type">
           <option value="">Любая</option>
           <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
             <option value="<%= val %>" <%= query.type === val ? 'selected' : '' %>><%= label %></option>
@@ -25,7 +25,7 @@
         </select>
       </div>
 
-      <div class="filter-group">
+      <div class="filter-group" id="rooms-group" <%= h.NON_RESIDENTIAL.includes(query.type) ? 'hidden' : '' %>>
         <label class="filter-label">Комнат</label>
         <div class="rooms-row">
           <% const selectedRooms = Array.isArray(query.rooms) ? query.rooms : (query.rooms ? [query.rooms] : []); %>
@@ -150,6 +150,8 @@
   window.CITY_DATA = <%- JSON.stringify(
     Object.fromEntries(Object.entries(h.CITIES).map(([name, c]) => [name, { districts: c.districts, metro: c.metro }]))
   ) %>;
+  // Фильтр «Комнат» не применим к нежилым объектам
+  window.NON_RESIDENTIAL = <%- JSON.stringify(h.NON_RESIDENTIAL) %>;
 </script>
 
 <%- include('partials/footer') %>

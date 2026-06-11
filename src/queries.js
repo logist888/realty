@@ -19,7 +19,7 @@ function buildFilters(q) {
     where.push('o.deal_type = ?');
     params.push(q.deal);
   }
-  if (q.type && ['flat', 'room', 'house', 'commercial'].includes(q.type)) {
+  if (q.type && ['flat', 'room', 'house', 'commercial', 'storage', 'parking'].includes(q.type)) {
     where.push('o.offer_type = ?');
     params.push(q.type);
   }

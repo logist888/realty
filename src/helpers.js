@@ -9,9 +9,19 @@ const OFFER_TYPES = {
   room: 'Комната',
   house: 'Дом',
   commercial: 'Коммерческая',
+  storage: 'Кладовая',
+  parking: 'Машиноместо',
 };
 
+// Типы без жилых характеристик (комнаты, балкон, жилая площадь)
+const NON_RESIDENTIAL = ['commercial', 'storage', 'parking'];
+
 const RENOVATIONS = ['без ремонта', 'косметический', 'евроремонт', 'дизайнерский'];
+
+// Назначение коммерческого помещения
+const PURPOSES = ['офис', 'торговая площадь', 'склад', 'общепит', 'производство', 'свободное назначение'];
+
+const PARKING_TYPES = ['подземный', 'многоуровневый', 'открытый', 'гараж'];
 
 const CITIES = {
   'Москва': {
@@ -56,12 +66,41 @@ function roomsLabel(offer) {
   return `${offer.rooms}-комн.`;
 }
 
+// Подпись этажа: 0 — цокольный, отрицательные — подземные
+function floorLabel(floor) {
+  if (floor === 0) return 'цоколь';
+  return String(floor);
+}
+
 function offerTitle(offer) {
-  const base = offer.offer_type === 'house'
-    ? `Дом, ${offer.area_total} м²`
-    : `${roomsLabel(offer)} ${offer.offer_type === 'flat' ? 'квартира, ' : ''}${offer.area_total} м²`;
-  const floor = offer.floor ? `, ${offer.floor}/${offer.floors_total} этаж` : '';
-  return base + floor;
+  let base;
+  switch (offer.offer_type) {
+    case 'house':
+      base = `Дом, ${offer.area_total} м²`;
+      break;
+    case 'storage':
+      base = `Кладовая, ${offer.area_total} м²`;
+      break;
+    case 'parking':
+      base = `Машиноместо, ${offer.area_total} м²`;
+      break;
+    case 'commercial': {
+      const purpose = offer.purpose ? offer.purpose[0].toUpperCase() + offer.purpose.slice(1) : 'Помещение';
+      base = `${purpose}, ${offer.area_total} м²`;
+      break;
+    }
+    case 'room':
+      base = `Комната, ${offer.area_total} м²`;
+      break;
+    default:
+      base = `${offer.rooms === 0 ? 'Студия' : offer.rooms + '-комн. квартира'}, ${offer.area_total} м²`;
+  }
+  if (offer.floor != null) {
+    base += offer.floors_total
+      ? `, ${floorLabel(offer.floor)}/${offer.floors_total} этаж`
+      : `, ${floorLabel(offer.floor)} этаж`;
+  }
+  return base;
 }
 
 function timeAgo(isoDate) {
@@ -76,6 +115,6 @@ function timeAgo(isoDate) {
 }
 
 module.exports = {
-  DEAL_TYPES, OFFER_TYPES, RENOVATIONS, CITIES,
-  formatPrice, plural, roomsLabel, offerTitle, timeAgo,
+  DEAL_TYPES, OFFER_TYPES, NON_RESIDENTIAL, RENOVATIONS, PURPOSES, PARKING_TYPES, CITIES,
+  formatPrice, plural, roomsLabel, floorLabel, offerTitle, timeAgo,
 };

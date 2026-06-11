@@ -4,7 +4,7 @@ const express = require('express');
 const multer = require('multer');
 const db = require('../db');
 const { requireAuth } = require('../auth');
-const { CITIES, RENOVATIONS } = require('../helpers');
+const { CITIES, RENOVATIONS, PURPOSES, PARKING_TYPES, NON_RESIDENTIAL } = require('../helpers');
 
 const router = express.Router();
 
@@ -25,20 +25,27 @@ const upload = multer({
   },
 });
 
+// parseInt с сохранением нуля (этаж 0 = цоколь); пустые значения -> null
+function intOrNull(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const n = parseInt(value, 10);
+  return Number.isInteger(n) ? n : null;
+}
+
 // Валидация формы объявления; возвращает {values, errors}
 function parseOfferForm(body) {
   const errors = [];
   const v = {
     deal_type: ['sale', 'rent_long', 'rent_daily'].includes(body.deal_type) ? body.deal_type : null,
-    offer_type: ['flat', 'room', 'house', 'commercial'].includes(body.offer_type) ? body.offer_type : null,
+    offer_type: ['flat', 'room', 'house', 'commercial', 'storage', 'parking'].includes(body.offer_type) ? body.offer_type : null,
     description: (body.description || '').trim(),
     price: parseInt(body.price, 10),
     rooms: parseInt(body.rooms, 10),
     area_total: parseFloat(body.area_total),
     area_living: parseFloat(body.area_living) || null,
     area_kitchen: parseFloat(body.area_kitchen) || null,
-    floor: parseInt(body.floor, 10) || null,
-    floors_total: parseInt(body.floors_total, 10) || null,
+    floor: intOrNull(body.floor),
+    floors_total: intOrNull(body.floors_total) > 0 ? intOrNull(body.floors_total) : null,
     build_year: parseInt(body.build_year, 10) || null,
     city: (body.city || '').trim(),
     district: (body.district || '').trim(),
@@ -47,6 +54,11 @@ function parseOfferForm(body) {
     metro_minutes: parseInt(body.metro_minutes, 10) || null,
     renovation: RENOVATIONS.includes(body.renovation) ? body.renovation : '',
     balcony: body.balcony ? 1 : 0,
+    purpose: PURPOSES.includes(body.purpose) ? body.purpose : '',
+    parking_type: PARKING_TYPES.includes(body.parking_type) ? body.parking_type : '',
+    ceiling_height: parseFloat(body.ceiling_height) || null,
+    security: body.security ? 1 : 0,
+    separate_entrance: body.separate_entrance ? 1 : 0,
   };
   if (!v.deal_type) errors.push('Выберите тип сделки');
   if (!v.offer_type) errors.push('Выберите тип недвижимости');
@@ -55,22 +67,51 @@ function parseOfferForm(body) {
   if (!Number.isInteger(v.rooms) || v.rooms < 0) v.rooms = 1;
   if (!v.city) errors.push('Укажите город');
   if (!v.address) errors.push('Укажите адрес');
-  if (v.floor && v.floors_total && v.floor > v.floors_total) errors.push('Этаж не может быть больше этажности дома');
+  if (v.floor !== null && (v.floor < -10 || v.floor > 100)) {
+    errors.push('Этаж должен быть в диапазоне от -10 до 100 (0 — цокольный)');
+  }
+  if (v.floor !== null && v.floor > 0 && v.floors_total && v.floor > v.floors_total) {
+    errors.push('Этаж не может быть больше этажности дома');
+  }
+  if (v.ceiling_height !== null && (v.ceiling_height < 1 || v.ceiling_height > 20)) {
+    errors.push('Высота потолков должна быть от 1 до 20 метров');
+  }
+  // Жилые характеристики не применимы к нежилым объектам
+  if (NON_RESIDENTIAL.includes(v.offer_type)) {
+    v.rooms = 0;
+    v.area_living = null;
+    v.area_kitchen = null;
+    v.balcony = 0;
+  }
+  if (v.offer_type !== 'commercial') {
+    v.purpose = '';
+    v.separate_entrance = 0;
+  }
+  if (v.offer_type !== 'parking') v.parking_type = '';
 
-  const cityInfo = CITIES[v.city];
-  if (cityInfo) {
-    v.lat = cityInfo.center[0] + (Math.random() - 0.5) * 0.1;
-    v.lng = cityInfo.center[1] + (Math.random() - 0.5) * 0.15;
+  // Координаты из автоподсказки адреса; иначе — случайная точка у центра города
+  const lat = parseFloat(body.lat);
+  const lng = parseFloat(body.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+    v.lat = lat;
+    v.lng = lng;
   } else {
-    v.lat = null;
-    v.lng = null;
+    const cityInfo = CITIES[v.city];
+    if (cityInfo) {
+      v.lat = cityInfo.center[0] + (Math.random() - 0.5) * 0.1;
+      v.lng = cityInfo.center[1] + (Math.random() - 0.5) * 0.15;
+    } else {
+      v.lat = null;
+      v.lng = null;
+    }
   }
   return { values: v, errors };
 }
 
 const OFFER_COLUMNS = ['deal_type', 'offer_type', 'description', 'price', 'rooms',
   'area_total', 'area_living', 'area_kitchen', 'floor', 'floors_total', 'build_year',
-  'city', 'district', 'address', 'metro', 'metro_minutes', 'lat', 'lng', 'renovation', 'balcony'];
+  'city', 'district', 'address', 'metro', 'metro_minutes', 'lat', 'lng', 'renovation', 'balcony',
+  'purpose', 'parking_type', 'ceiling_height', 'security', 'separate_entrance'];
 
 router.get('/offers/new', requireAuth, (req, res) => {
   res.render('offer-form', { offer: null, errors: [], values: {} });

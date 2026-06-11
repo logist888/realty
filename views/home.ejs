@@ -17,6 +17,8 @@
           <option value="room">Комнату</option>
           <option value="house">Дом</option>
           <option value="commercial">Коммерческую</option>
+          <option value="storage">Кладовую</option>
+          <option value="parking">Машиноместо</option>
         </select>
         <select name="city" class="input">
           <option value="">Все города</option>
@@ -28,9 +30,10 @@
     </form>
 
     <div class="hero-quick">
-      <a href="/search?deal=sale&rooms=0">Студии</a>
+      <a href="/search?deal=sale&type=storage">Кладовые</a>
+      <a href="/search?deal=sale&type=parking">Машиноместа</a>
+      <a href="/search?type=commercial">Коммерческая</a>
       <a href="/search?deal=sale&rooms=1">1-комнатные</a>
-      <a href="/search?deal=sale&rooms=2">2-комнатные</a>
       <a href="/search?deal=sale&type=house">Дома</a>
       <a href="/search?deal=rent_long">Аренда (<%= stats.rent %>)</a>
       <a href="/search?deal=sale">Продажа (<%= stats.sale %>)</a>

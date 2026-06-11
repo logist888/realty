@@ -1,4 +1,10 @@
 <%- include('partials/header', { title: h.offerTitle(offer) + ', ' + offer.address }) %>
+<% if (offer.lat && offer.lng) { %>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<% } %>
 
 <div class="container">
   <nav class="breadcrumbs">
@@ -35,18 +41,37 @@
       </div>
 
       <section class="offer-section">
-        <h2>О <%= offer.offer_type === 'house' ? 'доме' : offer.offer_type === 'commercial' ? 'помещении' : 'квартире' %></h2>
+        <% const aboutNames = { house: 'доме', commercial: 'помещении', storage: 'кладовой',
+             parking: 'машиноместе', room: 'комнате', flat: 'квартире' }; %>
+        <h2>О <%= aboutNames[offer.offer_type] %></h2>
+        <% const isResidential = !h.NON_RESIDENTIAL.includes(offer.offer_type); %>
         <dl class="params-grid">
           <div><dt>Общая площадь</dt><dd><%= offer.area_total %> м²</dd></div>
           <% if (offer.area_living) { %><div><dt>Жилая площадь</dt><dd><%= offer.area_living %> м²</dd></div><% } %>
           <% if (offer.area_kitchen) { %><div><dt>Кухня</dt><dd><%= offer.area_kitchen %> м²</dd></div><% } %>
-          <% if (offer.offer_type !== 'room' && offer.offer_type !== 'commercial') { %>
+          <% if (offer.offer_type === 'flat' || offer.offer_type === 'house') { %>
             <div><dt>Комнат</dt><dd><%= offer.rooms === 0 ? 'студия' : offer.rooms %></dd></div>
           <% } %>
-          <% if (offer.floor) { %><div><dt>Этаж</dt><dd><%= offer.floor %> из <%= offer.floors_total %></dd></div><% } %>
+          <% if (offer.floor != null) { %>
+            <div><dt>Этаж</dt><dd>
+              <%= h.floorLabel(offer.floor) %><% if (offer.floors_total) { %> из <%= offer.floors_total %><% } %>
+              <% if (offer.floor < 0) { %> <span class="muted">(подземный)</span><% } %>
+            </dd></div>
+          <% } %>
+          <% if (offer.purpose) { %><div><dt>Назначение</dt><dd><%= offer.purpose %></dd></div><% } %>
+          <% if (offer.parking_type) { %><div><dt>Тип паркинга</dt><dd><%= offer.parking_type %></dd></div><% } %>
+          <% if (offer.ceiling_height) { %><div><dt>Высота потолков</dt><dd><%= offer.ceiling_height %> м</dd></div><% } %>
+          <% if (h.NON_RESIDENTIAL.includes(offer.offer_type)) { %>
+            <div><dt>Охрана</dt><dd><%= offer.security ? 'есть' : 'нет' %></dd></div>
+          <% } %>
+          <% if (offer.offer_type === 'commercial') { %>
+            <div><dt>Отдельный вход</dt><dd><%= offer.separate_entrance ? 'есть' : 'нет' %></dd></div>
+          <% } %>
           <% if (offer.build_year) { %><div><dt>Год постройки</dt><dd><%= offer.build_year %></dd></div><% } %>
-          <% if (offer.renovation) { %><div><dt>Ремонт</dt><dd><%= offer.renovation %></dd></div><% } %>
-          <div><dt>Балкон/лоджия</dt><dd><%= offer.balcony ? 'есть' : 'нет' %></dd></div>
+          <% if (offer.renovation && isResidential) { %><div><dt>Ремонт</dt><dd><%= offer.renovation %></dd></div><% } %>
+          <% if (offer.offer_type === 'flat' || offer.offer_type === 'room') { %>
+            <div><dt>Балкон/лоджия</dt><dd><%= offer.balcony ? 'есть' : 'нет' %></dd></div>
+          <% } %>
         </dl>
       </section>
 
@@ -58,15 +83,14 @@
       <% if (offer.lat && offer.lng) { %>
       <section class="offer-section">
         <h2>Расположение</h2>
-        <div class="map-stub">
-          <div class="map-pin">📍</div>
-          <div>
-            <strong><%= offer.address %></strong><br>
-            <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %><br>
-            <span class="muted">Координаты: <%= offer.lat.toFixed(4) %>, <%= offer.lng.toFixed(4) %></span><br>
-            <a href="https://www.openstreetmap.org/?mlat=<%= offer.lat %>&mlon=<%= offer.lng %>#map=15/<%= offer.lat %>/<%= offer.lng %>"
-               target="_blank" rel="noopener">Открыть на карте OpenStreetMap →</a>
-          </div>
+        <div id="map" class="offer-map"
+             data-lat="<%= offer.lat %>" data-lng="<%= offer.lng %>"
+             data-title="<%= h.offerTitle(offer) %>"
+             data-address="<%= offer.city %>, <%= offer.address %>"></div>
+        <div class="map-fallback">
+          📍 <strong><%= offer.address %></strong>, <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %>
+          · <a href="https://www.openstreetmap.org/?mlat=<%= offer.lat %>&mlon=<%= offer.lng %>#map=16/<%= offer.lat %>/<%= offer.lng %>"
+               target="_blank" rel="noopener">открыть на OpenStreetMap →</a>
         </div>
       </section>
       <% } %>
