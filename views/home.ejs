@@ -22,7 +22,7 @@
         </select>
         <select name="city" class="input">
           <option value="">Все города</option>
-          <% Object.keys(h.CITIES).forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
+          <% cityOptions.forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
         </select>
         <input type="number" name="priceMax" class="input" placeholder="Цена до, ₽" min="0">
         <button type="submit" class="btn btn-accent btn-lg">Найти</button>

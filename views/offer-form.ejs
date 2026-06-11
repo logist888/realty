@@ -34,13 +34,13 @@
       <legend>Адрес</legend>
       <div class="form-row">
         <label>Город *
-          <input list="cities" name="city" id="city-input" class="input" required value="<%= values.city || '' %>" placeholder="Москва">
+          <input list="cities" name="city" id="city-input" class="input" required value="<%= values.city || '' %>" placeholder="Любой город России">
           <datalist id="cities">
-            <% Object.keys(h.CITIES).forEach(c => { %><option value="<%= c %>"><% }) %>
+            <% h.RU_CITIES.forEach(c => { %><option value="<%= c %>"><% }) %>
           </datalist>
         </label>
-        <label>Район
-          <input name="district" class="input" value="<%= values.district || '' %>" placeholder="ЦАО">
+        <label data-types="flat,room,house">Район <span class="muted">(подставится из подсказки адреса)</span>
+          <input name="district" id="district-input" class="input" value="<%= values.district || '' %>" placeholder="ЦАО">
         </label>
       </div>
       <label class="suggest-wrap">Улица, дом *

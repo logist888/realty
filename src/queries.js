@@ -1,4 +1,5 @@
 const db = require('./db');
+const { MO_CITIES } = require('./helpers');
 
 const PER_PAGE = 20;
 
@@ -23,7 +24,13 @@ function buildFilters(q) {
     where.push('o.offer_type = ?');
     params.push(q.type);
   }
-  if (q.city) {
+  if (q.city === 'Московская область') {
+    where.push(`o.city IN (${MO_CITIES.map(() => '?').join(',')})`);
+    params.push(...MO_CITIES);
+  } else if (q.city === 'Москва и Московская область') {
+    where.push(`o.city IN (?, ${MO_CITIES.map(() => '?').join(',')})`);
+    params.push('Москва', ...MO_CITIES);
+  } else if (q.city) {
     where.push('o.city = ?');
     params.push(q.city);
   }

@@ -72,7 +72,11 @@ const seedAll = db.transaction(() => {
     else areaTotal = rooms === 0 ? rand(22, 35) : 18 + rooms * rand(14, 22);
 
     // Цена за м² зависит от города, типа объекта и сделки
-    const cityFactor = city === 'Москва' ? 1 : city === 'Санкт-Петербург' ? 0.7 : 0.4;
+    const CITY_FACTORS = {
+      'Москва': 1, 'Санкт-Петербург': 0.7, 'Екатеринбург': 0.4,
+      'Химки': 0.6, 'Балашиха': 0.5, 'Подольск': 0.45,
+    };
+    const cityFactor = CITY_FACTORS[city] || 0.4;
     let price;
     if (offerType === 'storage') {
       price = dealType === 'sale'
@@ -108,10 +112,10 @@ const seedAll = db.transaction(() => {
       offerType === 'flat' ? rand(6, 20) : null,
       floor, offerType === 'house' ? null : floorsTotal,
       offerType === 'storage' || offerType === 'parking' ? null : rand(1960, 2025),
-      city, pick(cityInfo.districts),
+      city, nonRes ? '' : pick(cityInfo.districts),
       `ул. ${pick(STREETS)}, д. ${rand(1, 120)}`,
-      offerType === 'house' ? '' : pick(cityInfo.metro),
-      offerType === 'house' ? null : rand(2, 25),
+      offerType !== 'house' && cityInfo.metro.length ? pick(cityInfo.metro) : '',
+      offerType !== 'house' && cityInfo.metro.length ? rand(2, 25) : null,
       clat + (Math.random() - 0.5) * 0.25,
       clng + (Math.random() - 0.5) * 0.4,
       nonRes ? '' : pick(RENOVATIONS),

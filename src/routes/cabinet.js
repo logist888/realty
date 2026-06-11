@@ -76,12 +76,14 @@ function parseOfferForm(body) {
   if (v.ceiling_height !== null && (v.ceiling_height < 1 || v.ceiling_height > 20)) {
     errors.push('Высота потолков должна быть от 1 до 20 метров');
   }
-  // Жилые характеристики не применимы к нежилым объектам
+  // Жилые характеристики не применимы к нежилым объектам;
+  // район для них не заполняется вручную — при необходимости берётся из адреса
   if (NON_RESIDENTIAL.includes(v.offer_type)) {
     v.rooms = 0;
     v.area_living = null;
     v.area_kitchen = null;
     v.balcony = 0;
+    v.district = '';
   }
   if (v.offer_type !== 'commercial') {
     v.purpose = '';

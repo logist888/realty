@@ -4,6 +4,14 @@ const { searchOffers, getOffer, similarOffers } = require('../queries');
 
 const router = express.Router();
 
+// Список городов для фильтра: Москва первой, затем регионы, затем города из базы
+function cityFilterOptions() {
+  const dbCities = db.prepare(
+    "SELECT DISTINCT city FROM offers WHERE is_active = 1 AND city != 'Москва' ORDER BY city"
+  ).all().map(r => r.city);
+  return ['Москва', 'Московская область', 'Москва и Московская область', ...dbCities];
+}
+
 router.get('/', (req, res) => {
   const stats = db.prepare(`
     SELECT
@@ -16,12 +24,12 @@ router.get('/', (req, res) => {
     SELECT o.*, (SELECT url FROM photos p WHERE p.offer_id = o.id ORDER BY position LIMIT 1) AS photo
     FROM offers o WHERE o.is_active = 1 ORDER BY o.created_at DESC LIMIT 8
   `).all();
-  res.render('home', { stats, fresh });
+  res.render('home', { stats, fresh, cityOptions: cityFilterOptions() });
 });
 
 router.get('/search', (req, res) => {
   const result = searchOffers(req.query, req.user && req.user.id);
-  res.render('search', { ...result });
+  res.render('search', { ...result, cityOptions: cityFilterOptions() });
 });
 
 router.get('/offer/:id', (req, res) => {

@@ -115,17 +115,28 @@
       return { street, place };
     }
 
+    // Подсказка относится к выбранному городу? (город, посёлок или регион в свойствах)
+    function matchesCity(props, cityVal) {
+      if (!cityVal) return true;
+      const needle = cityVal.trim().toLowerCase();
+      return [props.city, props.town, props.village, props.county, props.state, props.district]
+        .filter(Boolean)
+        .some(v => v.toLowerCase().includes(needle) || needle.includes(v.toLowerCase()));
+    }
+
     async function fetchSuggestions(query) {
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
-      const cityPart = cityInput && cityInput.value ? cityInput.value + ', ' : '';
-      const url = 'https://photon.komoot.io/api/?limit=6&lang=default&q=' +
-        encodeURIComponent(cityPart + query);
+      const cityVal = cityInput ? cityInput.value.trim() : '';
+      const url = 'https://photon.komoot.io/api/?limit=10&lang=default&q=' +
+        encodeURIComponent((cityVal ? cityVal + ', ' : '') + query);
       try {
         const res = await fetch(url, { signal: abortCtrl.signal });
         if (!res.ok) return;
         const data = await res.json();
-        renderSuggestions(data.features || []);
+        // Оставляем только адреса в выбранном городе
+        const features = (data.features || []).filter(f => matchesCity(f.properties || {}, cityVal));
+        renderSuggestions(features.slice(0, 6));
       } catch (_) { /* геокодер недоступен — ввод остаётся ручным */ }
     }
 
@@ -145,6 +156,12 @@
           selecting = true;
           addressInput.value = street;
           if (cityInput && !cityInput.value && f.properties.city) cityInput.value = f.properties.city;
+          // Район подтягиваем из геокодера, если поле есть, видимо и не заполнено
+          const districtInput = document.getElementById('district-input');
+          if (districtInput && !districtInput.value && !districtInput.closest('[data-types]').hidden
+              && f.properties.district) {
+            districtInput.value = f.properties.district;
+          }
           const [lng, lat] = f.geometry.coordinates;
           setCoords(lat, lng);
           suggestBox.hidden = true;
@@ -298,7 +315,7 @@
         fill(districtSelect, info.districts);
         fill(metroSelect, info.metro);
         districtGroup.hidden = false;
-        metroGroup.hidden = false;
+        metroGroup.hidden = info.metro.length === 0;
       } else {
         districtGroup.hidden = true;
         metroGroup.hidden = true;

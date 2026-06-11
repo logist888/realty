@@ -55,10 +55,10 @@
       </div>
 
       <div class="filter-group">
-        <label class="filter-label">Город</label>
+        <label class="filter-label">Город / регион</label>
         <select name="city" class="input" id="city-select">
           <option value="">Все города</option>
-          <% Object.keys(h.CITIES).forEach(c => { %>
+          <% cityOptions.forEach(c => { %>
             <option value="<%= c %>" <%= query.city === c ? 'selected' : '' %>><%= c %></option>
           <% }) %>
         </select>
@@ -75,7 +75,7 @@
         </select>
       </div>
 
-      <div class="filter-group" id="metro-group" <%= cityInfo ? '' : 'hidden' %>>
+      <div class="filter-group" id="metro-group" <%= cityInfo && cityInfo.metro.length ? '' : 'hidden' %>>
         <label class="filter-label">Метро</label>
         <select name="metro" class="input">
           <option value="">Любое</option>
