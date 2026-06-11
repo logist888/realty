@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' && title ? title + ' — Реалти' : 'Реалти — недвижимость: купить, снять квартиру, дом' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%230468ff' d='M12 3 2 12h3v8h6v-5h2v5h6v-8h3z'/></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="logo">Реалти<span class="logo-dot">.</span></a>
+    <nav class="main-nav">
+      <a href="/search?deal=sale" class="<%= query.deal === 'sale' ? 'active' : '' %>">Купить</a>
+      <a href="/search?deal=rent_long" class="<%= query.deal === 'rent_long' ? 'active' : '' %>">Снять</a>
+      <a href="/search?deal=rent_daily" class="<%= query.deal === 'rent_daily' ? 'active' : '' %>">Посуточно</a>
+      <a href="/search?type=commercial">Коммерческая</a>
+    </nav>
+    <div class="header-actions">
+      <% if (user) { %>
+        <a href="/favorites" class="header-link" title="Избранное">&#9825; Избранное</a>
+        <a href="/my" class="header-link">Мои объявления</a>
+        <a href="/offers/new" class="btn btn-primary btn-sm">+ Разместить</a>
+        <form action="/logout" method="post" class="inline-form">
+          <button type="submit" class="header-link btn-as-link" title="<%= user.email %>">Выйти (<%= user.name.split(' ')[0] %>)</button>
+        </form>
+      <% } else { %>
+        <a href="/offers/new" class="btn btn-primary btn-sm">+ Разместить</a>
+        <a href="/login" class="header-link">Войти</a>
+      <% } %>
+    </div>
+  </div>
+</header>
+<main>

@@ -1,0 +1,49 @@
+<%- include('partials/header', { title: 'Мои объявления' }) %>
+
+<div class="container narrow">
+  <div class="page-head">
+    <h1>Мои объявления</h1>
+    <a href="/offers/new" class="btn btn-primary">+ Разместить</a>
+  </div>
+
+  <% if (offers.length === 0) { %>
+    <div class="empty-state">
+      <p>У вас пока нет объявлений.</p>
+      <a href="/offers/new" class="btn btn-accent">Подать первое объявление</a>
+    </div>
+  <% } %>
+
+  <div class="my-offers-list">
+    <% offers.forEach(offer => { %>
+      <article class="my-offer-row <%= offer.is_active ? '' : 'inactive' %>">
+        <a href="/offer/<%= offer.id %>" class="my-offer-photo">
+          <img src="<%= offer.photo || '/img/ph/' + offer.id + '-0.svg' %>" alt="">
+        </a>
+        <div class="my-offer-body">
+          <a href="/offer/<%= offer.id %>" class="card-title"><%= h.offerTitle(offer) %></a>
+          <div class="card-address"><%= offer.city %>, <%= offer.address %></div>
+          <div class="card-price"><%= h.formatPrice(offer.price, offer.deal_type) %></div>
+          <div class="my-offer-stats">
+            <span class="badge <%= offer.is_active ? 'badge-green' : 'badge-gray' %>">
+              <%= offer.is_active ? 'Опубликовано' : 'Снято с публикации' %>
+            </span>
+            · <%= offer.views %> <%= h.plural(offer.views, 'просмотр', 'просмотра', 'просмотров') %>
+            · <%= h.timeAgo(offer.created_at) %>
+          </div>
+        </div>
+        <div class="my-offer-actions">
+          <a href="/offers/<%= offer.id %>/edit" class="btn btn-outline btn-sm">Изменить</a>
+          <form action="/offers/<%= offer.id %>/toggle" method="post">
+            <button type="submit" class="btn btn-outline btn-sm"><%= offer.is_active ? 'Снять' : 'Опубликовать' %></button>
+          </form>
+          <form action="/offers/<%= offer.id %>/delete" method="post"
+                onsubmit="return confirm('Удалить объявление безвозвратно?')">
+            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+          </form>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

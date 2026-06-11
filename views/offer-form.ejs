@@ -1,0 +1,127 @@
+<%- include('partials/header', { title: offer ? 'Редактирование объявления' : 'Новое объявление' }) %>
+
+<div class="container narrow">
+  <h1><%= offer ? 'Редактирование объявления' : 'Разместить объявление' %></h1>
+
+  <% if (errors.length) { %>
+    <div class="alert alert-error">
+      <ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
+    </div>
+  <% } %>
+
+  <form method="post" enctype="multipart/form-data" class="offer-form">
+    <fieldset>
+      <legend>Тип</legend>
+      <div class="form-row">
+        <label>Сделка
+          <select name="deal_type" class="input" required>
+            <% Object.entries(h.DEAL_TYPES).forEach(([val, label]) => { %>
+              <option value="<%= val %>" <%= values.deal_type === val ? 'selected' : '' %>><%= label === 'Купить' ? 'Продажа' : label === 'Снять' ? 'Долгосрочная аренда' : label %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>Недвижимость
+          <select name="offer_type" class="input" required>
+            <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
+              <option value="<%= val %>" <%= values.offer_type === val ? 'selected' : '' %>><%= label %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Адрес</legend>
+      <div class="form-row">
+        <label>Город *
+          <input list="cities" name="city" class="input" required value="<%= values.city || '' %>" placeholder="Москва">
+          <datalist id="cities">
+            <% Object.keys(h.CITIES).forEach(c => { %><option value="<%= c %>"><% }) %>
+          </datalist>
+        </label>
+        <label>Район
+          <input name="district" class="input" value="<%= values.district || '' %>" placeholder="ЦАО">
+        </label>
+      </div>
+      <label>Улица, дом *
+        <input name="address" class="input" required value="<%= values.address || '' %>" placeholder="ул. Ленина, д. 10">
+      </label>
+      <div class="form-row">
+        <label>Метро
+          <input name="metro" class="input" value="<%= values.metro || '' %>" placeholder="Арбатская">
+        </label>
+        <label>Минут до метро
+          <input type="number" name="metro_minutes" class="input" min="1" max="120" value="<%= values.metro_minutes || '' %>">
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Параметры</legend>
+      <div class="form-row">
+        <label>Комнат (0 — студия)
+          <input type="number" name="rooms" class="input" min="0" max="20" value="<%= values.rooms != null ? values.rooms : 1 %>">
+        </label>
+        <label>Общая площадь, м² *
+          <input type="number" name="area_total" class="input" required min="1" step="0.1" value="<%= values.area_total || '' %>">
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Жилая площадь, м²
+          <input type="number" name="area_living" class="input" min="1" step="0.1" value="<%= values.area_living || '' %>">
+        </label>
+        <label>Кухня, м²
+          <input type="number" name="area_kitchen" class="input" min="1" step="0.1" value="<%= values.area_kitchen || '' %>">
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Этаж
+          <input type="number" name="floor" class="input" min="1" max="100" value="<%= values.floor || '' %>">
+        </label>
+        <label>Этажей в доме
+          <input type="number" name="floors_total" class="input" min="1" max="100" value="<%= values.floors_total || '' %>">
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Год постройки
+          <input type="number" name="build_year" class="input" min="1850" max="2030" value="<%= values.build_year || '' %>">
+        </label>
+        <label>Ремонт
+          <select name="renovation" class="input">
+            <option value="">Не указан</option>
+            <% h.RENOVATIONS.forEach(r => { %>
+              <option value="<%= r %>" <%= values.renovation === r ? 'selected' : '' %>><%= r %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" name="balcony" value="1" <%= values.balcony ? 'checked' : '' %>> Балкон или лоджия
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Цена и описание</legend>
+      <label>Цена, ₽ * <span class="muted">(для аренды — в месяц или сутки)</span>
+        <input type="number" name="price" class="input" required min="1" value="<%= values.price || '' %>">
+      </label>
+      <label>Описание
+        <textarea name="description" class="input" rows="6" placeholder="Расскажите о недвижимости: состояние, инфраструктура, условия сделки..."><%= values.description || '' %></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Фотографии</legend>
+      <input type="file" name="photos" accept="image/*" multiple class="input">
+      <p class="muted">До 10 фото, JPG/PNG/WebP, до 8 МБ каждое.
+        <% if (!offer) { %>Если не добавить фото, будут использованы заглушки.<% } else { %>Новые фото добавятся к существующим.<% } %>
+      </p>
+    </fieldset>
+
+    <button type="submit" class="btn btn-accent btn-lg btn-block">
+      <%= offer ? 'Сохранить изменения' : 'Опубликовать объявление' %>
+    </button>
+  </form>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,20 @@
+<%- include('../partials/header', { title: 'Вход' }) %>
+
+<div class="container auth-container">
+  <form method="post" action="/login" class="auth-form">
+    <h1>Вход</h1>
+    <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+    <input type="hidden" name="next" value="<%= next %>">
+    <label>E-mail
+      <input type="email" name="email" class="input" required autofocus placeholder="demo@realty.local">
+    </label>
+    <label>Пароль
+      <input type="password" name="password" class="input" required placeholder="••••••••">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    <p class="auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+    <p class="muted demo-hint">Демо-доступ: demo@realty.local / demo1234</p>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

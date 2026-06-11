@@ -1,0 +1,135 @@
+<%- include('partials/header', { title: h.offerTitle(offer) + ', ' + offer.address }) %>
+
+<div class="container">
+  <nav class="breadcrumbs">
+    <a href="/">Главная</a> ›
+    <a href="/search?deal=<%= offer.deal_type %>"><%= h.DEAL_TYPES[offer.deal_type] %></a> ›
+    <a href="/search?deal=<%= offer.deal_type %>&type=<%= offer.offer_type %>&city=<%= encodeURIComponent(offer.city) %>"><%= h.OFFER_TYPES[offer.offer_type] %>, <%= offer.city %></a>
+  </nav>
+
+  <% if (!offer.is_active) { %>
+    <div class="alert alert-warn">Объявление снято с публикации и видно только вам.</div>
+  <% } %>
+
+  <div class="offer-layout">
+    <div class="offer-main">
+      <h1 class="offer-title"><%= h.offerTitle(offer) %></h1>
+      <div class="offer-address">
+        <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %>, <%= offer.address %>
+        <% if (offer.metro) { %>
+          <span class="card-metro"><span class="metro-dot"></span><%= offer.metro %>
+            <% if (offer.metro_minutes) { %><span class="metro-time"><%= offer.metro_minutes %> мин. пешком</span><% } %>
+          </span>
+        <% } %>
+      </div>
+
+      <div class="gallery" id="gallery">
+        <img src="<%= offer.photos[0] ? offer.photos[0].url : '/img/ph/' + offer.id + '-0.svg' %>" alt="Фото 1" id="gallery-main">
+        <% if (offer.photos.length > 1) { %>
+          <div class="gallery-thumbs">
+            <% offer.photos.forEach((p, i) => { %>
+              <img src="<%= p.url %>" alt="Фото <%= i + 1 %>" class="<%= i === 0 ? 'active' : '' %>" data-index="<%= i %>">
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <section class="offer-section">
+        <h2>О <%= offer.offer_type === 'house' ? 'доме' : offer.offer_type === 'commercial' ? 'помещении' : 'квартире' %></h2>
+        <dl class="params-grid">
+          <div><dt>Общая площадь</dt><dd><%= offer.area_total %> м²</dd></div>
+          <% if (offer.area_living) { %><div><dt>Жилая площадь</dt><dd><%= offer.area_living %> м²</dd></div><% } %>
+          <% if (offer.area_kitchen) { %><div><dt>Кухня</dt><dd><%= offer.area_kitchen %> м²</dd></div><% } %>
+          <% if (offer.offer_type !== 'room' && offer.offer_type !== 'commercial') { %>
+            <div><dt>Комнат</dt><dd><%= offer.rooms === 0 ? 'студия' : offer.rooms %></dd></div>
+          <% } %>
+          <% if (offer.floor) { %><div><dt>Этаж</dt><dd><%= offer.floor %> из <%= offer.floors_total %></dd></div><% } %>
+          <% if (offer.build_year) { %><div><dt>Год постройки</dt><dd><%= offer.build_year %></dd></div><% } %>
+          <% if (offer.renovation) { %><div><dt>Ремонт</dt><dd><%= offer.renovation %></dd></div><% } %>
+          <div><dt>Балкон/лоджия</dt><dd><%= offer.balcony ? 'есть' : 'нет' %></dd></div>
+        </dl>
+      </section>
+
+      <section class="offer-section">
+        <h2>Описание</h2>
+        <p class="offer-description"><%= offer.description || 'Продавец не добавил описание.' %></p>
+      </section>
+
+      <% if (offer.lat && offer.lng) { %>
+      <section class="offer-section">
+        <h2>Расположение</h2>
+        <div class="map-stub">
+          <div class="map-pin">📍</div>
+          <div>
+            <strong><%= offer.address %></strong><br>
+            <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %><br>
+            <span class="muted">Координаты: <%= offer.lat.toFixed(4) %>, <%= offer.lng.toFixed(4) %></span><br>
+            <a href="https://www.openstreetmap.org/?mlat=<%= offer.lat %>&mlon=<%= offer.lng %>#map=15/<%= offer.lat %>/<%= offer.lng %>"
+               target="_blank" rel="noopener">Открыть на карте OpenStreetMap →</a>
+          </div>
+        </div>
+      </section>
+      <% } %>
+
+      <div class="offer-meta">
+        Объявление № <%= offer.id %> · размещено <%= h.timeAgo(offer.created_at) %> · <%= offer.views + 1 %> <%= h.plural(offer.views + 1, 'просмотр', 'просмотра', 'просмотров') %>
+      </div>
+    </div>
+
+    <aside class="offer-side">
+      <div class="side-card">
+        <div class="side-price"><%= h.formatPrice(offer.price, offer.deal_type) %></div>
+        <% if (offer.deal_type === 'sale') { %>
+          <div class="side-price-m2"><%= Math.round(offer.price / offer.area_total).toLocaleString('ru-RU') %> ₽/м²</div>
+        <% } %>
+
+        <div class="seller">
+          <div class="seller-avatar"><%= offer.seller_name[0] %></div>
+          <div>
+            <div class="seller-name"><%= offer.seller_name %></div>
+            <div class="seller-role"><%= offer.seller_is_agent ? 'Агент по недвижимости' : 'Собственник' %></div>
+          </div>
+        </div>
+
+        <button class="btn btn-accent btn-block" id="show-phone" data-offer-id="<%= offer.id %>">Показать телефон</button>
+        <button class="btn btn-outline btn-block fav-btn-big <%= offer.is_favorite ? 'active' : '' %>" data-offer-id="<%= offer.id %>">
+          <%= offer.is_favorite ? '♥ В избранном' : '♡ В избранное' %>
+        </button>
+
+        <% if (user && user.id === offer.user_id) { %>
+          <hr>
+          <a href="/offers/<%= offer.id %>/edit" class="btn btn-outline btn-block">Редактировать</a>
+        <% } %>
+      </div>
+
+      <% if (offer.deal_type === 'sale') { %>
+      <div class="side-card mortgage" data-price="<%= offer.price %>">
+        <h3>Ипотечный калькулятор</h3>
+        <label>Первоначальный взнос, ₽
+          <input type="number" class="input" id="mort-down" value="<%= Math.round(offer.price * 0.2) %>" min="0" step="100000">
+        </label>
+        <label>Срок, лет
+          <input type="number" class="input" id="mort-years" value="20" min="1" max="30">
+        </label>
+        <label>Ставка, % годовых
+          <input type="number" class="input" id="mort-rate" value="16" min="0.1" max="40" step="0.1">
+        </label>
+        <div class="mort-result">Платёж: <strong id="mort-payment">—</strong> /мес.</div>
+      </div>
+      <% } %>
+    </aside>
+  </div>
+
+  <% if (similar.length) { %>
+  <section class="section">
+    <h2>Похожие объявления</h2>
+    <div class="offers-grid">
+      <% similar.forEach(s => { %>
+        <%- include('partials/offer-card', { offer: s }) %>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

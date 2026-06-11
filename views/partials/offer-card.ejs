@@ -1,0 +1,29 @@
+<%# Карточка объявления в выдаче. Ожидает переменную offer. %>
+<article class="offer-card">
+  <a href="/offer/<%= offer.id %>" class="card-photo-link">
+    <img src="<%= offer.photo || '/img/ph/' + offer.id + '-0.svg' %>" alt="<%= h.offerTitle(offer) %>" loading="lazy">
+    <% if (offer.photo_count > 1) { %><span class="photo-count">📷 <%= offer.photo_count %></span><% } %>
+  </a>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-price"><%= h.formatPrice(offer.price, offer.deal_type) %></div>
+      <button class="fav-btn <%= offer.is_favorite ? 'active' : '' %>" data-offer-id="<%= offer.id %>"
+        title="<%= offer.is_favorite ? 'Убрать из избранного' : 'В избранное' %>" aria-label="В избранное">
+        <%- offer.is_favorite ? '&#9829;' : '&#9825;' %>
+      </button>
+    </div>
+    <% if (offer.deal_type === 'sale' && offer.area_total) { %>
+      <div class="card-price-m2"><%= Math.round(offer.price / offer.area_total).toLocaleString('ru-RU') %> ₽/м²</div>
+    <% } %>
+    <a href="/offer/<%= offer.id %>" class="card-title"><%= h.offerTitle(offer) %></a>
+    <div class="card-address">
+      <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %>, <%= offer.address %>
+    </div>
+    <% if (offer.metro) { %>
+      <div class="card-metro"><span class="metro-dot"></span><%= offer.metro %>
+        <% if (offer.metro_minutes) { %><span class="metro-time"><%= offer.metro_minutes %> мин.</span><% } %>
+      </div>
+    <% } %>
+    <div class="card-date"><%= h.timeAgo(offer.created_at) %></div>
+  </div>
+</article>

@@ -1,0 +1,21 @@
+<%- include('partials/header', { title: 'Избранное' }) %>
+
+<div class="container">
+  <h1>Избранное</h1>
+
+  <% if (offers.length === 0) { %>
+    <div class="empty-state">
+      <p>В избранном пока пусто.</p>
+      <p>Нажимайте ♡ на понравившихся объявлениях, чтобы вернуться к ним позже.</p>
+      <a href="/search" class="btn btn-accent">Найти недвижимость</a>
+    </div>
+  <% } %>
+
+  <div class="offers-grid">
+    <% offers.forEach(offer => { %>
+      <%- include('partials/offer-card', { offer }) %>
+    <% }) %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

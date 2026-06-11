@@ -1,0 +1,19 @@
+{
+  "name": "realty",
+  "version": "1.0.0",
+  "description": "Реалти — функциональный аналог cian.ru: поиск, продажа и аренда недвижимости",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node src/seed.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "multer": "^2.1.1"
+  }
+}

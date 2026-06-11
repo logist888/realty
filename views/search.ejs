@@ -1,0 +1,155 @@
+<%- include('partials/header', { title: 'Поиск недвижимости' }) %>
+
+<div class="container search-layout">
+  <aside class="filters">
+    <form action="/search" method="get" id="filter-form">
+      <h3>Фильтры</h3>
+
+      <div class="filter-group">
+        <label class="filter-label">Тип сделки</label>
+        <select name="deal" class="input">
+          <option value="">Любая</option>
+          <% Object.entries(h.DEAL_TYPES).forEach(([val, label]) => { %>
+            <option value="<%= val %>" <%= query.deal === val ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Недвижимость</label>
+        <select name="type" class="input">
+          <option value="">Любая</option>
+          <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
+            <option value="<%= val %>" <%= query.type === val ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Комнат</label>
+        <div class="rooms-row">
+          <% const selectedRooms = Array.isArray(query.rooms) ? query.rooms : (query.rooms ? [query.rooms] : []); %>
+          <% [['0','Студия'],['1','1'],['2','2'],['3','3'],['4','4+']].forEach(([val, label]) => { %>
+            <label class="room-chip">
+              <input type="checkbox" name="rooms" value="<%= val %>" <%= selectedRooms.includes(val) ? 'checked' : '' %>>
+              <span><%= label %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Цена, ₽</label>
+        <div class="range-row">
+          <input type="number" name="priceMin" class="input" placeholder="от" min="0" value="<%= query.priceMin || '' %>">
+          <input type="number" name="priceMax" class="input" placeholder="до" min="0" value="<%= query.priceMax || '' %>">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Площадь, м²</label>
+        <div class="range-row">
+          <input type="number" name="areaMin" class="input" placeholder="от" min="0" value="<%= query.areaMin || '' %>">
+          <input type="number" name="areaMax" class="input" placeholder="до" min="0" value="<%= query.areaMax || '' %>">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Город</label>
+        <select name="city" class="input" id="city-select">
+          <option value="">Все города</option>
+          <% Object.keys(h.CITIES).forEach(c => { %>
+            <option value="<%= c %>" <%= query.city === c ? 'selected' : '' %>><%= c %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <% const cityInfo = query.city && h.CITIES[query.city]; %>
+      <div class="filter-group" id="district-group" <%= cityInfo ? '' : 'hidden' %>>
+        <label class="filter-label">Район</label>
+        <select name="district" class="input">
+          <option value="">Любой</option>
+          <% if (cityInfo) cityInfo.districts.forEach(d => { %>
+            <option value="<%= d %>" <%= query.district === d ? 'selected' : '' %>><%= d %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="filter-group" id="metro-group" <%= cityInfo ? '' : 'hidden' %>>
+        <label class="filter-label">Метро</label>
+        <select name="metro" class="input">
+          <option value="">Любое</option>
+          <% if (cityInfo) cityInfo.metro.forEach(m => { %>
+            <option value="<%= m %>" <%= query.metro === m ? 'selected' : '' %>><%= m %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Показать</button>
+      <a href="/search" class="reset-link">Сбросить фильтры</a>
+    </form>
+  </aside>
+
+  <section class="results">
+    <div class="results-head">
+      <h1 class="results-title">
+        <%= total %> <%= h.plural(total, 'объявление', 'объявления', 'объявлений') %>
+        <% if (query.city) { %> — <%= query.city %><% } %>
+      </h1>
+      <form action="/search" method="get" class="sort-form">
+        <% for (const [key, val] of Object.entries(query)) {
+             if (key === 'sort' || key === 'page') continue;
+             const vals = Array.isArray(val) ? val : [val]; %>
+          <% vals.forEach(v => { %><input type="hidden" name="<%= key %>" value="<%= v %>"><% }) %>
+        <% } %>
+        <select name="sort" class="input input-sm" onchange="this.form.submit()">
+          <option value="default" <%= !query.sort || query.sort === 'default' ? 'selected' : '' %>>Сначала новые</option>
+          <option value="price_asc" <%= query.sort === 'price_asc' ? 'selected' : '' %>>Дешевле</option>
+          <option value="price_desc" <%= query.sort === 'price_desc' ? 'selected' : '' %>>Дороже</option>
+          <option value="area_desc" <%= query.sort === 'area_desc' ? 'selected' : '' %>>По площади</option>
+        </select>
+      </form>
+    </div>
+
+    <% if (offers.length === 0) { %>
+      <div class="empty-state">
+        <p>По вашему запросу ничего не найдено.</p>
+        <p>Попробуйте смягчить фильтры или <a href="/search">посмотреть все объявления</a>.</p>
+      </div>
+    <% } %>
+
+    <div class="offers-list">
+      <% offers.forEach(offer => { %>
+        <%- include('partials/offer-card', { offer }) %>
+      <% }) %>
+    </div>
+
+    <% if (pages > 1) { %>
+      <nav class="pagination">
+        <% const baseQuery = { ...query }; delete baseQuery.page;
+           const qs = (p) => {
+             const u = new URLSearchParams();
+             for (const [k, v] of Object.entries(baseQuery)) {
+               (Array.isArray(v) ? v : [v]).forEach(x => u.append(k, x));
+             }
+             u.set('page', p);
+             return '/search?' + u.toString();
+           }; %>
+        <% if (page > 1) { %><a href="<%= qs(page - 1) %>" class="page-link">&larr;</a><% } %>
+        <% for (let p = Math.max(1, page - 3); p <= Math.min(pages, page + 3); p++) { %>
+          <a href="<%= qs(p) %>" class="page-link <%= p === page ? 'active' : '' %>"><%= p %></a>
+        <% } %>
+        <% if (page < pages) { %><a href="<%= qs(page + 1) %>" class="page-link">&rarr;</a><% } %>
+      </nav>
+    <% } %>
+  </section>
+</div>
+
+<script>
+  // Списки районов и метро для динамической подстановки при смене города
+  window.CITY_DATA = <%- JSON.stringify(
+    Object.fromEntries(Object.entries(h.CITIES).map(([name, c]) => [name, { districts: c.districts, metro: c.metro }]))
+  ) %>;
+</script>
+
+<%- include('partials/footer') %>

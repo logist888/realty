@@ -1,0 +1,24 @@
+<%- include('../partials/header', { title: 'Регистрация' }) %>
+
+<div class="container auth-container">
+  <form method="post" action="/register" class="auth-form">
+    <h1>Регистрация</h1>
+    <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+    <label>Имя *
+      <input name="name" class="input" required value="<%= values.name || '' %>" placeholder="Иван Иванов">
+    </label>
+    <label>E-mail *
+      <input type="email" name="email" class="input" required value="<%= values.email || '' %>" placeholder="ivan@example.com">
+    </label>
+    <label>Телефон
+      <input type="tel" name="phone" class="input" value="<%= values.phone || '' %>" placeholder="+7 (900) 000-00-00">
+    </label>
+    <label>Пароль * <span class="muted">(минимум 6 символов)</span>
+      <input type="password" name="password" class="input" required minlength="6">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">Создать аккаунт</button>
+    <p class="auth-switch">Уже есть аккаунт? <a href="/login">Войти</a></p>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

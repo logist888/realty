@@ -1,0 +1,66 @@
+<%- include('partials/header', { title: '' }) %>
+
+<section class="hero">
+  <div class="container">
+    <h1>Найдите своё жильё</h1>
+    <p class="hero-sub">Более <%= stats.total %> объявлений о продаже и аренде недвижимости</p>
+
+    <form action="/search" method="get" class="hero-search">
+      <div class="hero-tabs">
+        <label><input type="radio" name="deal" value="sale" checked><span>Купить</span></label>
+        <label><input type="radio" name="deal" value="rent_long"><span>Снять</span></label>
+        <label><input type="radio" name="deal" value="rent_daily"><span>Посуточно</span></label>
+      </div>
+      <div class="hero-fields">
+        <select name="type" class="input">
+          <option value="flat">Квартиру</option>
+          <option value="room">Комнату</option>
+          <option value="house">Дом</option>
+          <option value="commercial">Коммерческую</option>
+        </select>
+        <select name="city" class="input">
+          <option value="">Все города</option>
+          <% Object.keys(h.CITIES).forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
+        </select>
+        <input type="number" name="priceMax" class="input" placeholder="Цена до, ₽" min="0">
+        <button type="submit" class="btn btn-accent btn-lg">Найти</button>
+      </div>
+    </form>
+
+    <div class="hero-quick">
+      <a href="/search?deal=sale&rooms=0">Студии</a>
+      <a href="/search?deal=sale&rooms=1">1-комнатные</a>
+      <a href="/search?deal=sale&rooms=2">2-комнатные</a>
+      <a href="/search?deal=sale&type=house">Дома</a>
+      <a href="/search?deal=rent_long">Аренда (<%= stats.rent %>)</a>
+      <a href="/search?deal=sale">Продажа (<%= stats.sale %>)</a>
+    </div>
+  </div>
+</section>
+
+<section class="container section">
+  <h2>Свежие объявления</h2>
+  <div class="offers-grid">
+    <% fresh.forEach(offer => { %>
+      <%- include('partials/offer-card', { offer }) %>
+    <% }) %>
+  </div>
+  <div class="center">
+    <a href="/search" class="btn btn-outline">Смотреть все объявления</a>
+  </div>
+</section>
+
+<section class="container section promo-row">
+  <div class="promo-card">
+    <h3>Разместите объявление</h3>
+    <p>Бесплатная публикация. Ваше объявление увидят тысячи покупателей и арендаторов.</p>
+    <a href="/offers/new" class="btn btn-primary">Подать объявление</a>
+  </div>
+  <div class="promo-card">
+    <h3>Ипотечный калькулятор</h3>
+    <p>Рассчитайте ежемесячный платёж прямо на странице объявления о продаже.</p>
+    <a href="/search?deal=sale" class="btn btn-outline">К объявлениям</a>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
