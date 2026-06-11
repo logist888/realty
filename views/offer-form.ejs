@@ -9,29 +9,43 @@
     </div>
   <% } %>
 
-  <form method="post" enctype="multipart/form-data" class="offer-form" id="offer-form">
-    <fieldset>
-      <legend>Тип</legend>
-      <div class="form-row">
-        <label>Сделка
-          <select name="deal_type" class="input" required>
-            <% Object.entries(h.DEAL_TYPES).forEach(([val, label]) => { %>
-              <option value="<%= val %>" <%= values.deal_type === val ? 'selected' : '' %>><%= label === 'Купить' ? 'Продажа' : label === 'Снять' ? 'Долгосрочная аренда' : label %></option>
-            <% }) %>
-          </select>
-        </label>
-        <label>Недвижимость
-          <select name="offer_type" class="input" id="offer-type" required>
-            <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
-              <option value="<%= val %>" <%= values.offer_type === val ? 'selected' : '' %>><%= label %></option>
-            <% }) %>
-          </select>
-        </label>
-      </div>
-    </fieldset>
+  <ol class="wizard-progress" id="wizard-progress">
+    <li class="wstep" data-step="0"><span class="wstep-num">1</span><span class="wstep-label">Тип</span></li>
+    <li class="wstep" data-step="1"><span class="wstep-num">2</span><span class="wstep-label">Адрес</span></li>
+    <li class="wstep" data-step="2"><span class="wstep-num">3</span><span class="wstep-label">Параметры</span></li>
+    <li class="wstep" data-step="3"><span class="wstep-num">4</span><span class="wstep-label">Цена и описание</span></li>
+    <li class="wstep" data-step="4"><span class="wstep-num">5</span><span class="wstep-label">Фото</span></li>
+  </ol>
 
-    <fieldset>
-      <legend>Адрес</legend>
+  <form method="post" enctype="multipart/form-data" class="offer-form" id="offer-form">
+
+    <!-- Шаг 1: тип сделки и недвижимости -->
+    <section class="wizard-step" data-step="0">
+      <h2 class="wizard-title">Что размещаете?</h2>
+      <div class="choice-label">Тип сделки</div>
+      <div class="choice-group">
+        <% [['sale', 'Продажа'], ['rent_long', 'Долгосрочная аренда'], ['rent_daily', 'Посуточная аренда']].forEach(([val, label]) => { %>
+          <label class="choice-card">
+            <input type="radio" name="deal_type" value="<%= val %>" <%= (values.deal_type || 'sale') === val ? 'checked' : '' %>>
+            <span><%= label %></span>
+          </label>
+        <% }) %>
+      </div>
+      <div class="choice-label">Тип недвижимости</div>
+      <div class="choice-group">
+        <% const typeIcons = { flat: '🏢', room: '🚪', house: '🏡', commercial: '🏬', storage: '📦', parking: '🚗' }; %>
+        <% Object.entries(h.OFFER_TYPES).forEach(([val, label]) => { %>
+          <label class="choice-card">
+            <input type="radio" name="offer_type" value="<%= val %>" <%= (values.offer_type || 'flat') === val ? 'checked' : '' %>>
+            <span><%= typeIcons[val] %> <%= label %></span>
+          </label>
+        <% }) %>
+      </div>
+    </section>
+
+    <!-- Шаг 2: адрес -->
+    <section class="wizard-step" data-step="1" hidden>
+      <h2 class="wizard-title">Где находится объект?</h2>
       <div class="form-row">
         <label>Город *
           <input list="cities" name="city" id="city-input" class="input" required value="<%= values.city || '' %>" placeholder="Любой город России">
@@ -62,10 +76,11 @@
           <input type="number" name="metro_minutes" class="input" min="1" max="120" value="<%= values.metro_minutes || '' %>">
         </label>
       </div>
-    </fieldset>
+    </section>
 
-    <fieldset>
-      <legend>Параметры</legend>
+    <!-- Шаг 3: параметры -->
+    <section class="wizard-step" data-step="2" hidden>
+      <h2 class="wizard-title">Параметры объекта</h2>
 
       <div class="form-row" data-types="flat,room,house">
         <label>Комнат (0 — студия)
@@ -145,20 +160,22 @@
       <label class="checkbox-label" data-types="flat,room">
         <input type="checkbox" name="balcony" value="1" <%= values.balcony ? 'checked' : '' %>> Балкон или лоджия
       </label>
-    </fieldset>
+    </section>
 
-    <fieldset>
-      <legend>Цена и описание</legend>
+    <!-- Шаг 4: цена и описание -->
+    <section class="wizard-step" data-step="3" hidden>
+      <h2 class="wizard-title">Цена и описание</h2>
       <label>Цена, ₽ * <span class="muted">(для аренды — в месяц или сутки)</span>
         <input type="number" name="price" class="input" required min="1" value="<%= values.price || '' %>">
       </label>
       <label>Описание
         <textarea name="description" class="input" rows="6" placeholder="Расскажите об объекте: состояние, инфраструктура, условия сделки..."><%= values.description || '' %></textarea>
       </label>
-    </fieldset>
+    </section>
 
-    <fieldset>
-      <legend>Фотографии</legend>
+    <!-- Шаг 5: фотографии -->
+    <section class="wizard-step" data-step="4" hidden>
+      <h2 class="wizard-title">Фотографии</h2>
       <div class="dropzone" id="dropzone" tabindex="0" role="button"
            aria-label="Загрузить фотографии">
         <input type="file" name="photos" id="photos-input" accept="image/*" multiple hidden>
@@ -172,11 +189,16 @@
       <p class="muted">
         <% if (!offer) { %>Если не добавить фото, будут использованы заглушки.<% } else { %>Новые фото добавятся к существующим.<% } %>
       </p>
-    </fieldset>
+    </section>
 
-    <button type="submit" class="btn btn-accent btn-lg btn-block">
-      <%= offer ? 'Сохранить изменения' : 'Опубликовать объявление' %>
-    </button>
+    <div class="wizard-nav">
+      <button type="button" class="btn btn-outline" id="wizard-back" hidden>← Назад</button>
+      <div class="wizard-nav-spacer"></div>
+      <button type="button" class="btn btn-primary" id="wizard-next">Далее →</button>
+      <button type="submit" class="btn btn-accent btn-lg" id="wizard-submit" hidden>
+        <%= offer ? 'Сохранить изменения' : 'Опубликовать объявление' %>
+      </button>
+    </div>
   </form>
 </div>
 

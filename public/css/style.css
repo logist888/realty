@@ -235,16 +235,52 @@ h2 { font-size: 22px; margin: 14px 0; }
 .mort-result strong { color: var(--blue); font-size: 18px; }
 
 /* ===== Формы ===== */
-.offer-form fieldset {
-  border: none; background: var(--card); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 18px 20px; margin: 0 0 16px;
-}
-.offer-form legend { font-weight: 700; font-size: 17px; padding: 0 4px; }
-.offer-form label { display: block; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
-.offer-form .input { margin-top: 4px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .checkbox-label { display: flex !important; align-items: center; gap: 8px; }
 .checkbox-label input { width: auto; }
+
+/* Мастер размещения объявления */
+.wizard-progress {
+  display: flex; gap: 4px; list-style: none; padding: 0; margin: 0 0 20px;
+  counter-reset: none;
+}
+.wstep {
+  flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 10px 12px; background: var(--card); border-radius: 8px;
+  box-shadow: var(--shadow); font-size: 13px; color: var(--muted);
+  border: 2px solid transparent; user-select: none;
+}
+.wstep-num {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--border);
+  color: var(--text); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; flex-shrink: 0;
+}
+.wstep.active { border-color: var(--blue); color: var(--text); font-weight: 600; }
+.wstep.active .wstep-num { background: var(--blue); color: #fff; }
+.wstep.done { color: var(--text); }
+.wstep.done .wstep-num { background: var(--green); color: #fff; }
+
+.wizard-step {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 22px 24px; margin-bottom: 16px;
+}
+.wizard-title { margin: 0 0 18px; font-size: 20px; }
+.wizard-step label { display: block; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
+.wizard-step .input { margin-top: 4px; }
+.wizard-nav { display: flex; gap: 12px; align-items: center; margin: 8px 0 24px; }
+.wizard-nav-spacer { flex: 1; }
+
+.choice-label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 8px; }
+.choice-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice-card { cursor: pointer; margin-bottom: 0 !important; }
+.choice-card input { display: none; }
+.choice-card span {
+  display: inline-block; padding: 14px 20px; border: 2px solid var(--border);
+  border-radius: 10px; font-size: 15px; font-weight: 600; background: #fff;
+  transition: border-color .15s, background .15s;
+}
+.choice-card:hover span { border-color: var(--blue); }
+.choice-card input:checked + span { border-color: var(--blue); background: #eef4ff; color: var(--blue-dark); }
 
 /* Автоподсказки адреса */
 .suggest-wrap { position: relative; }
@@ -343,4 +379,7 @@ h2 { font-size: 22px; margin: 14px 0; }
   .form-row { grid-template-columns: 1fr; }
   .header-inner { gap: 12px; }
   .my-offer-row { flex-wrap: wrap; }
+  .wizard-progress { flex-wrap: wrap; }
+  .wstep { flex: 1 1 45%; }
+  .wstep-label { font-size: 12px; }
 }

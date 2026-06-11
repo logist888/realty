@@ -188,17 +188,73 @@
     });
   }
 
-  // --- Поля формы объявления, зависящие от типа недвижимости ---
-  const offerTypeSelect = document.getElementById('offer-type');
-  if (offerTypeSelect) {
+  // --- Мастер размещения объявления: шаги, валидация, поля по типу ---
+  const wizardForm = document.getElementById('offer-form');
+  if (wizardForm) {
+    const steps = Array.from(wizardForm.querySelectorAll('.wizard-step'));
+    const progress = Array.from(document.querySelectorAll('#wizard-progress .wstep'));
+    const backBtn = document.getElementById('wizard-back');
+    const nextBtn = document.getElementById('wizard-next');
+    const submitBtn = document.getElementById('wizard-submit');
+    let current = 0;
+
     function applyTypeVisibility() {
-      const type = offerTypeSelect.value;
-      document.querySelectorAll('#offer-form [data-types]').forEach((el) => {
+      const checked = wizardForm.querySelector('input[name="offer_type"]:checked');
+      const type = checked ? checked.value : 'flat';
+      wizardForm.querySelectorAll('[data-types]').forEach((el) => {
         el.hidden = !el.dataset.types.split(',').includes(type);
       });
     }
-    offerTypeSelect.addEventListener('change', applyTypeVisibility);
+    wizardForm.querySelectorAll('input[name="offer_type"]').forEach((radio) =>
+      radio.addEventListener('change', applyTypeVisibility));
     applyTypeVisibility();
+
+    function showStep(index) {
+      current = index;
+      steps.forEach((s, i) => { s.hidden = i !== index; });
+      progress.forEach((p, i) => {
+        p.classList.toggle('active', i === index);
+        p.classList.toggle('done', i < index);
+      });
+      backBtn.hidden = index === 0;
+      nextBtn.hidden = index === steps.length - 1;
+      submitBtn.hidden = index !== steps.length - 1;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Все видимые поля текущего шага должны пройти браузерную валидацию
+    function validateStep(index) {
+      const fields = steps[index].querySelectorAll('input, select, textarea');
+      for (const field of fields) {
+        if (field.closest('[hidden]')) continue;
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (validateStep(current)) showStep(current + 1);
+    });
+    backBtn.addEventListener('click', () => showStep(current - 1));
+
+    // Клик по пройденному шагу в прогресс-баре возвращает к нему
+    progress.forEach((p, i) => p.addEventListener('click', () => {
+      if (i < current) showStep(i);
+      else if (i > current && validateStep(current)) showStep(current + 1);
+    }));
+
+    // Enter не отправляет форму с промежуточного шага
+    wizardForm.addEventListener('submit', (e) => {
+      if (current !== steps.length - 1) {
+        e.preventDefault();
+        if (validateStep(current)) showStep(current + 1);
+      }
+    });
+
+    showStep(0);
   }
 
   // --- Drag & drop загрузка фотографий с превью ---
