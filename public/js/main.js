@@ -71,18 +71,37 @@
     recalc();
   }
 
-  // --- Карта на странице объявления (Leaflet + OpenStreetMap) ---
+  // --- Карта на странице объявления ---
+  // Основной поставщик — Яндекс.Карты (границы РФ согласно законодательству),
+  // при отсутствии API-ключа — fallback на Leaflet + OpenStreetMap.
   const mapEl = document.getElementById('map');
-  if (mapEl && window.L) {
+  if (mapEl) {
     const lat = Number(mapEl.dataset.lat);
     const lng = Number(mapEl.dataset.lng);
-    const map = L.map(mapEl, { scrollWheelZoom: false }).setView([lat, lng], 16);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-    L.marker([lat, lng]).addTo(map)
-      .bindPopup(`<strong>${mapEl.dataset.title}</strong><br>${mapEl.dataset.address}`);
+    if (window.ymaps) {
+      ymaps.ready(() => {
+        const map = new ymaps.Map(mapEl, {
+          center: [lat, lng],
+          zoom: 16,
+          controls: ['zoomControl', 'typeSelector'],
+        }, { suppressMapOpenBlock: true });
+        map.behaviors.disable('scrollZoom');
+        map.geoObjects.add(new ymaps.Placemark([lat, lng], {
+          balloonContentHeader: mapEl.dataset.title,
+          balloonContentBody: mapEl.dataset.address,
+        }, { preset: 'islands#redHomeIcon' }));
+      });
+    } else if (window.L) {
+      const map = L.map(mapEl, { scrollWheelZoom: false }).setView([lat, lng], 16);
+      // Текст «Leaflet» убираем; © OpenStreetMap оставляем — обязательное условие лицензии ODbL
+      map.attributionControl.setPrefix(false);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+      L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>${mapEl.dataset.title}</strong><br>${mapEl.dataset.address}`);
+    }
   }
 
   // --- Автоподсказки адреса (геокодер Photon / OpenStreetMap) ---

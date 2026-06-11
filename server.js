@@ -30,6 +30,9 @@ app.use((req, res, next) => {
   res.locals.h = helpers;
   res.locals.query = req.query;
   res.locals.currentPath = req.path;
+  // Ключ Яндекс.Карт: при наличии карта объявления рендерится Яндексом
+  // (границы РФ отображаются согласно законодательству), иначе — OSM
+  res.locals.ymapsKey = process.env.YANDEX_MAPS_API_KEY || '';
   next();
 });
 

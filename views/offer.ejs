@@ -1,9 +1,13 @@
 <%- include('partials/header', { title: h.offerTitle(offer) + ', ' + offer.address }) %>
 <% if (offer.lat && offer.lng) { %>
+  <% if (ymapsKey) { %>
+<script src="https://api-maps.yandex.ru/2.1/?apikey=<%= ymapsKey %>&lang=ru_RU"></script>
+  <% } else { %>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <% } %>
 <% } %>
 
 <div class="container">
@@ -89,8 +93,13 @@
              data-address="<%= offer.city %>, <%= offer.address %>"></div>
         <div class="map-fallback">
           📍 <strong><%= offer.address %></strong>, <%= offer.city %><% if (offer.district) { %>, <%= offer.district %><% } %>
+          <% if (ymapsKey) { %>
+          · <a href="https://yandex.ru/maps/?pt=<%= offer.lng %>,<%= offer.lat %>&z=16&l=map"
+               target="_blank" rel="noopener">открыть в Яндекс.Картах →</a>
+          <% } else { %>
           · <a href="https://www.openstreetmap.org/?mlat=<%= offer.lat %>&mlon=<%= offer.lng %>#map=16/<%= offer.lat %>/<%= offer.lng %>"
                target="_blank" rel="noopener">открыть на OpenStreetMap →</a>
+          <% } %>
         </div>
       </section>
       <% } %>
