@@ -260,6 +260,10 @@ function rollLoot() {
   const sparks = combat.mobs.reduce((a, m) => a + rnd(3, 8) * (m.isBoss ? 3 : 1), 0);
   addRes('gold', gold); addRes('sparks', sparks);
   combat.loot.gold = gold; combat.loot.sparks = sparks;
+  // опыт за бой (классический уровень)
+  const xp = combat.mobs.reduce((a, m) => a + (10 + (m.worldTier || 1) * 5) * (m.isBoss ? 3 : 1), 0);
+  combat.loot.xp = xp;
+  gainXp(xp);
   // ресурсы-трофеи (с учётом удачи)
   const pool = ['thinHide','thickHide','bone','herb','mushroom','ore','stone','gem','mica','sand'];
   const drops = 1 + Math.floor(player.derived.lootBonus / 50) + bosses;

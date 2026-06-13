@@ -30,8 +30,9 @@ function render() {
   $('hud').innerHTML = `
     <button class="home-btn ${activeView === 'tower' ? 'on' : ''}" onclick="setView('tower')" title="На главную — Вавилонская башня">🏯</button>
     <div class="hud-left">
-      <div class="hero-name">${esc(player.name)} <span class="lvl">ур. ${player.level} · опасность ${player.danger}</span></div>
+      <div class="hero-name">${esc(player.name)} <span class="lvl">🎖 Уровень ${player.xpLevel} · ⚔️ опасность ${player.danger}</span></div>
       ${bar(player.hp, player.maxHp, 'hp')} ${bar(player.mp, player.maxMp, 'mp')}
+      <div class="xpwrap"><span class="xplabel">Опыт</span>${bar(player.xp, xpNeed(player.xpLevel), 'xp')}</div>
     </div>
     ${resStrip()}`;
 
@@ -369,10 +370,20 @@ function lootHtml() {
   const l = combat.loot;
   const res = Object.entries(l.res).map(([k, v]) => `${v}× ${RESOURCES[k].name}`).join(', ');
   return `<div class="loot">
-    <div>🪙 Золото: +${l.gold} · 🔥 Искры: +${l.sparks}</div>
+    <div>⭐ Опыт: +${l.xp || 0} · 🪙 Золото: +${l.gold} · 🔥 Искры: +${l.sparks}</div>
     ${res ? `<div>Трофеи: ${res}</div>` : ''}
     ${l.spell ? `<div>📜 Формула заклинания: ${esc(l.spell)}</div>` : ''}
   </div>`;
+}
+
+// всплывающий тост (используется при левел-апе)
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
 // старт

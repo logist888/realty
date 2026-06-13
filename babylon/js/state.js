@@ -15,6 +15,7 @@ function newPlayer(name) {
     level: 1,
     danger: 1,            // «опасность» героя — влияет на силу мобов
     xp: 0,
+    xpLevel: 1,           // классический уровень (растёт от опыта)
     hp: 0, mp: 0,         // заполнятся в recalc()
     stats,
     // магия: уровни стихий и направлений + изученные заклинания
@@ -81,8 +82,29 @@ function trainElement(el, dir, amount) {
   if (dir in player.dirs) player.dirs[dir] += amount;
 }
 
+// --- Классический уровень и опыт (видимая полоска) ---
+// Сколько опыта нужно, чтобы уйти с уровня lvl на следующий.
+function xpNeed(lvl) { return 100 + (lvl - 1) * 75; }
+function gainXp(n) {
+  if (!n) return;
+  player.xp = (player.xp || 0) + n;
+  let need = xpNeed(player.xpLevel);
+  while (player.xp >= need) {
+    player.xp -= need;
+    player.xpLevel += 1;
+    player.hp = player.maxHp; player.mp = player.maxMp; // полное восстановление
+    const reward = player.xpLevel * 20;
+    addRes('sparks', reward);
+    pushLog(`🎉 Новый уровень ${player.xpLevel}! Полное восстановление и +${reward} 🔥 искр.`);
+    if (typeof showToast === 'function') showToast(`🎉 Уровень ${player.xpLevel}!`);
+    need = xpNeed(player.xpLevel);
+  }
+}
+
 // --- Производные параметры из статов (формулы из раздела «статы») ---
 function recalc() {
+  if (player.xpLevel == null) player.xpLevel = 1;   // миграция старых сохранений
+  if (player.xp == null) player.xp = 0;
   const v = (k) => player.stats[k].val + equipBonus(k);
   const maxHp = 100 + v('end') * 5;
   const maxMp = 20 + v('int') * 5;

@@ -42,6 +42,15 @@ i{color:var(--muted)}
 .bar .fill{height:100%; transition:width .25s}
 .bar.hp .fill{background:linear-gradient(90deg,#7a2b22,var(--hp))}
 .bar.mp .fill{background:linear-gradient(90deg,#23477a,var(--mp))}
+.bar.xp .fill{background:linear-gradient(90deg,#3c6b2e,var(--xp))}
+.xpwrap{display:flex; align-items:center; gap:.4em}
+.xplabel{font-size:.65rem; color:var(--xp); min-width:34px; text-transform:uppercase; letter-spacing:.04em}
+.xpwrap .bar{flex:1}
+#toast{position:fixed; top:64px; left:50%; transform:translateX(-50%) translateY(-24px); z-index:30;
+  background:linear-gradient(180deg,#f0c469,#9c7a2e); color:#1a130c; font-weight:800; font-size:1.05rem;
+  padding:.55em 1.4em; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.6); border:1px solid #fff3cf;
+  opacity:0; pointer-events:none; transition:opacity .35s, transform .35s}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 .bar span{position:absolute; inset:0; text-align:center; font-size:11px; line-height:16px; text-shadow:0 1px 2px #000}
 .bar.tiny{height:13px} .bar.tiny span{line-height:13px; font-size:10px}
 
