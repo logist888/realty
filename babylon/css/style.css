@@ -10,8 +10,10 @@ body{
   background:
     radial-gradient(1200px 500px at 50% -10%, #3a2c1c 0%, transparent 60%),
     linear-gradient(180deg,var(--bg2),var(--bg));
-  min-height:100vh; padding-bottom:74px;
+  min-height:100vh; padding-bottom:calc(74px + env(safe-area-inset-bottom, 0px));
 }
+/* внутри Telegram тянемся на стабильную высоту вьюпорта */
+html.in-telegram, html.in-telegram body{ min-height:var(--tg-vh, 100vh); }
 h2{color:var(--gold2); margin:.2em 0 .4em; font-weight:700}
 h3{color:var(--gold); margin:1em 0 .4em; border-bottom:1px solid var(--line); padding-bottom:.2em}
 .muted{color:var(--muted); font-size:.9em}
@@ -64,7 +66,8 @@ i{color:var(--muted)}
 
 /* tabs */
 .tabs{position:fixed; bottom:0; left:0; right:0; display:flex; overflow-x:auto;
-  background:#1a130c; border-top:2px solid var(--gold); z-index:6}
+  background:#1a130c; border-top:2px solid var(--gold); z-index:6;
+  padding-bottom:env(safe-area-inset-bottom, 0px)}
 .tab{flex:1; min-width:72px; background:none; border:none; color:var(--muted);
   padding:.4em .2em; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; gap:2px}
 .tab small{font-size:.6rem}
