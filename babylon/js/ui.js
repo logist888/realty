@@ -51,6 +51,7 @@ function render() {
 // ---------------- Вавилонская башня (хаб) ----------------
 function viewTower() {
   return `<div class="tower">
+    <div class="banner">${towerArt()}</div>
     <h2>🏯 Вавилонская башня</h2>
     <p class="muted">Цитадель порядка в хаосе. Полубоги обитают здесь, между нижним миром смертных и нестабильным верхним миром. Выберите помещение.</p>
     <div class="grid build-grid">
@@ -138,6 +139,7 @@ function itemCard(it) {
   const action = it.slot ? `<button class="mini" onclick="equipItem(${it.id})">надеть</button>`
     : (it.use && !it.use.throwDmg && !it.use.heal && !it.use.mana ? '' : `<span class="muted">в бою</span>`);
   return `<div class="item-card ${it.type}">
+    <div class="ic-art">${itemArt(it)}</div>
     <div class="ic-head"><b>${esc(it.name)}</b>${it.qty ? ` ×${it.qty}` : ''}</div>
     <div class="ic-type">${it.type}</div>
     <div class="ic-stats">${stats.filter(Boolean).join(' · ')}</div>
@@ -151,8 +153,10 @@ function viewStairs() {
   const w = WORLDS[expedSel.world];
   const locOpts = w.locations.map((l, i) => `<option value="${i}" ${expedSel.loc === i ? 'selected' : ''}>${l[0]} — ${l[1].join(', ')}</option>`).join('');
   const diffs = [75, 100, 125, 150, 175, 200].map((d) => `<option value="${d}" ${expedSel.diff === d ? 'selected' : ''}>${d}%</option>`).join('');
+  const loc = w.locations[expedSel.loc];
   return `<div class="panel">
     <h2>🪜 Лестница в Небо</h2>
+    <div class="banner">${worldBg(expedSel.world, loc[0])}<span class="banner-cap">${esc(w.name)} · ${esc(loc[0])}</span></div>
     <p class="muted">${esc(w.intro)}</p>
     <div class="form-row"><label>Мир</label>
       <select onchange="expedSel.world=+this.value; expedSel.loc=0; render()">${worldOpts}</select></div>
@@ -292,6 +296,7 @@ function renderCombat() {
   if (!combat) return;
   const mobsHtml = combat.mobs.map((m, i) => `
     <div class="mob ${m.hp <= 0 ? 'dead' : ''} ${combatSel.target === i ? 'sel' : ''}" onclick="combatSel.target=${i}; combat.target=${i}; renderCombat()">
+      <div class="mob-art">${mobArt(m.name, { boss: m.isBoss })}</div>
       <div class="mname">${esc(m.name)}</div>
       ${bar(Math.max(0, m.hp), m.maxHp, 'hp')}
       <div class="mtags">${m.isCaster ? '🔮' : ''}${m.isRanged ? '🏹' : ''} атк ${m.attack} · защ ${m.defense}${m.effects.length ? ' · ' + m.effects.map((e) => e.type).join(',') : ''}</div>
@@ -326,7 +331,10 @@ function renderCombat() {
       </div>
     </div>`;
 
+  const backdrop = combat.ctx.worldIndex != null
+    ? worldBg(combat.ctx.worldIndex, combat.ctx.location) : towerArt();
   $('combat-body').innerHTML = `
+    <div class="combat-backdrop">${backdrop}</div>
     <div class="combat-top">
       <div class="combat-hero">
         <b>${esc(player.name)}</b> · раунд ${combat.round}

@@ -170,7 +170,7 @@ function startExpedition(worldIdx, locIdx, difficulty) {
   const key = `${world.name} / ${loc[0]}`;
   if (!player.visitedLocations.includes(key)) player.visitedLocations.push(key);
   player.counters.expeditions += 1;
-  startCombat(squad, { world: world.name, location: loc[0], difficulty });
+  startCombat(squad, { world: world.name, worldIndex: worldIdx, location: loc[0], difficulty });
   checkQuests();
   openCombat();
 }

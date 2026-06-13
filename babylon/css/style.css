@@ -142,6 +142,17 @@ select{background:#1a130c; color:var(--txt); border:1px solid var(--line); borde
 .combat-result.win h3{color:var(--xp)} .combat-result.lose h3{color:var(--hp)}
 .loot{margin:.6em 0; line-height:1.7}
 
+/* процедурная графика (SVG) */
+.banner{position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:.8rem; height:120px}
+.banner .art-bg{display:block; width:100%; height:100%}
+.banner-cap{position:absolute; left:8px; bottom:6px; color:#fff; font-weight:700; font-size:.85rem; text-shadow:0 1px 4px #000, 0 0 8px #000}
+.art-mob{width:100%; height:100%; display:block}
+.mob-art{width:64px; height:64px; margin:0 auto; background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.06), transparent 70%)}
+.ic-art{width:48px; height:48px; float:right; margin-left:.4em}
+.art-item{width:100%; height:100%}
+.combat-backdrop{position:relative; height:84px; border-radius:8px; overflow:hidden; margin-bottom:.6em; border:1px solid var(--line)}
+.combat-backdrop .art-bg{width:100%; height:100%}
+
 @media(max-width:640px){
   .log{display:none}
   .form-row label{width:auto}
