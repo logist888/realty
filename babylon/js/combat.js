@@ -28,7 +28,7 @@ function genMob(worldTier, name, difficulty) {
     attack: Math.round((10 + base) * diffMult),
     defense: Math.round((4 + worldTier * 2) * diffMult),
     armor: Math.round(worldTier * diffMult),
-    dmg: [Math.round((3 + worldTier) * diffMult * bossMult), Math.round((7 + worldTier * 2) * diffMult * bossMult)],
+    dmg: [Math.round((3 + worldTier * 1.4) * diffMult * bossMult), Math.round((7 + worldTier * 2.8) * diffMult * bossMult)],
     crit: Math.min(60, 5 + worldTier * 2),
     effects: [],     // активные эффекты на мобе
     blockZone: null,
@@ -111,7 +111,9 @@ function playerCast(spellId, targetZone) {
   if (combat.over) return;
 
   const mob = curMob();
-  const elBonus = 1 + (player.elements[spell.element] || 0) * 0.10;
+  // бонус стихии с потолком и убыванием — чтобы магия не разгонялась бесконечно
+  const elLvl = player.elements[spell.element] || 0;
+  const elBonus = 1 + Math.min(elLvl, 40) * 0.03; // максимум +120%
   const mult = player.derived.spellMult * elBonus;
   const e = spell.eff;
   let magCrit = chance(player.derived.magCrit);
@@ -245,9 +247,11 @@ function endCombat(won, fled) {
     player.counters.kills += combat.mobs.length;
     pushLog(`🏆 Победа над: ${combat.mobs.map((m) => m.name).join(', ')}.`);
   } else {
-    player.hp = Math.round(player.maxHp * 0.3); // не умираем насовсем — теряем часть лута
-    clog('☠️ Поражение! Вы возвращаетесь в башню ослабленным.');
-    pushLog('☠️ Поражение в бою.');
+    player.hp = Math.round(player.maxHp * 0.3); // не умираем насовсем — теряем часть добра
+    const lost = Math.floor((player.resources.gold || 0) * 0.1); // штраф: 10% золота
+    if (lost > 0) { spendRes('gold', lost); clog(`💸 Поражение! Вы обронили ${lost} золота и вернулись ослабленным.`); }
+    else clog('☠️ Поражение! Вы возвращаетесь в башню ослабленным.');
+    pushLog(`☠️ Поражение в бою${lost > 0 ? ` (−${lost} золота)` : ''}.`);
   }
   recalc();
   saveGame();

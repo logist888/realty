@@ -9,7 +9,7 @@ let _itemId = Date.now();
 function newPlayer(name) {
   const stats = {};
   // База: всё по 5 единиц; прогресс роста по геометрической прогрессии.
-  STAT_ORDER.forEach((k) => { stats[k] = { val: 5, prog: 0, cap: 100 }; });
+  STAT_ORDER.forEach((k) => { stats[k] = { val: 5, prog: 0, cap: 40 }; });
   return {
     name: name || 'Полубог',
     level: 1,
@@ -71,7 +71,7 @@ function trainStat(key, amount) {
   while (s.prog >= s.cap) {
     s.prog -= s.cap;
     s.val += 1;
-    s.cap *= 2; // 100 -> 200 -> 400 ...
+    s.cap = Math.round(s.cap * 1.6); // 40 -> 64 -> 102 ... (мягкая геометрия)
     pushLog(`📈 ${STATS[key].name} выросла до ${s.val}!`);
   }
   recalc();

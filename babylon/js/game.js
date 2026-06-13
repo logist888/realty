@@ -165,8 +165,15 @@ function startExpedition(worldIdx, locIdx, difficulty) {
   const world = WORLDS[worldIdx];
   const loc = world.locations[locIdx];
   const names = loc[1];
-  // формируем отряд мобов локации (1-2 штуки)
+  // формируем отряд мобов локации (1-2 штуки). Игрок действует раз в раунд,
+  // поэтому в паре каждый моб ослаблен, чтобы суммарная угроза была честной.
   const squad = names.slice(0, 2).map((n) => genMob(world.tier, n, difficulty));
+  if (squad.length > 1) {
+    squad.forEach((m) => {
+      m.hp = m.maxHp = Math.round(m.maxHp * 0.7);
+      m.dmg = [Math.round(m.dmg[0] * 0.65), Math.round(m.dmg[1] * 0.65)];
+    });
+  }
   const key = `${world.name} / ${loc[0]}`;
   if (!player.visitedLocations.includes(key)) player.visitedLocations.push(key);
   player.counters.expeditions += 1;
