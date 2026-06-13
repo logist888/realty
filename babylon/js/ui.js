@@ -28,6 +28,7 @@ function resStrip() {
 function render() {
   applyRegen();
   $('hud').innerHTML = `
+    <button class="home-btn ${activeView === 'tower' ? 'on' : ''}" onclick="setView('tower')" title="На главную — Вавилонская башня">🏯</button>
     <div class="hud-left">
       <div class="hero-name">${esc(player.name)} <span class="lvl">ур. ${player.level} · опасность ${player.danger}</span></div>
       ${bar(player.hp, player.maxHp, 'hp')} ${bar(player.mp, player.maxMp, 'mp')}
@@ -39,13 +40,30 @@ function render() {
     workshops: viewWorkshops, lab: viewLab, shop: viewShop, academy: viewAcademy,
     bank: viewBank, council: viewCouncil,
   };
-  $('main').innerHTML = (views[activeView] || viewTower)();
-  $('tabs').innerHTML = TOWER_BUILDINGS.map((b) =>
-    `<button class="tab ${activeView === b.id ? 'on' : ''}" onclick="setView('${b.id}')">${b.icon}<small>${b.name}</small></button>`
-  ).join('') + `<button class="tab ${activeView === 'tower' ? 'on' : ''}" onclick="setView('tower')">🏯<small>Башня</small></button>`;
+  // баннер с артом здания над страницей (кроме башни и лестницы — у них свои баннеры)
+  const noBanner = ['tower', 'stairs'];
+  let head = '';
+  if (!noBanner.includes(activeView)) {
+    const b = TOWER_BUILDINGS.find((x) => x.id === activeView);
+    if (b) head = buildingBanner(b);
+  }
+  $('main').innerHTML = head + (views[activeView] || viewTower)();
+
+  const homeTab = `<button class="tab home ${activeView === 'tower' ? 'on' : ''}" onclick="setView('tower')">🏯<small>Башня</small></button>`;
+  const buildingTabs = TOWER_BUILDINGS.map((b) =>
+    `<button class="tab ${activeView === b.id ? 'on' : ''}" onclick="setView('${b.id}')"><span class="tabicon">${buildingArt(b.name, b.icon)}</span><small>${b.name}</small></button>`
+  ).join('');
+  $('tabs').innerHTML = homeTab + buildingTabs;
 
   $('logbox').innerHTML = player.log.slice(0, 12).map((l) => `<div>${esc(l.msg)}</div>`).join('');
   saveGame();
+}
+
+// баннер-шапка страницы здания: арт здания (cover) + название
+function buildingBanner(b) {
+  const base = `img/tower/${artSlug(b.name)}`;
+  const art = artFrame(base, `<span class="bemoji" style="font-size:3rem">${b.icon}</span>`, 'af-bg', ['jpg', 'png']);
+  return `<div class="banner page-banner">${art}<span class="banner-cap">${b.icon} ${b.name}</span></div>`;
 }
 
 // ---------------- Вавилонская башня (хаб) ----------------

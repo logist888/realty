@@ -26,7 +26,11 @@ i{color:var(--muted)}
   padding:.6rem 1rem; background:linear-gradient(180deg,#2c2117,#211910);
   border-bottom:2px solid var(--gold); position:sticky; top:0; z-index:5; flex-wrap:wrap;
 }
-.hud-left{flex:1; min-width:240px}
+.home-btn{font-size:1.5rem; line-height:1; background:#33271a; border:1px solid var(--gold);
+  color:var(--gold2); border-radius:10px; padding:.35em .55em; cursor:pointer; flex:0 0 auto}
+.home-btn:hover{background:#3f2f1c}
+.home-btn.on{background:var(--gold); border-color:var(--gold2)}
+.hud-left{flex:1; min-width:200px}
 .hero-name{font-size:1.05rem; font-weight:700; color:var(--gold2)}
 .hero-name .lvl{font-size:.75rem; color:var(--muted); font-weight:400; margin-left:.4em}
 .res-strip{display:flex; gap:.8rem; font-weight:700}
@@ -56,6 +60,11 @@ i{color:var(--muted)}
   padding:.4em .2em; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; gap:2px}
 .tab small{font-size:.6rem}
 .tab.on{color:var(--gold2); background:#2a1f12}
+.tab.home{color:var(--gold2); border-right:1px solid var(--line)}
+.tabicon{display:block; width:30px; height:30px; margin:0 auto 1px}
+.tabicon .artframe>img{object-fit:cover; border-radius:5px}
+.tabicon .bemoji{font-size:1.3rem}
+.page-banner{height:100px}
 
 /* tower */
 .build-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.7rem}
