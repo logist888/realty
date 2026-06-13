@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Проект «Вавилон»</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="hud" class="hud"></header>
+
+  <main id="main" class="content"></main>
+
+  <aside id="log" class="log">
+    <div class="log-title">📓 Блокнот</div>
+    <div id="logbox" class="logbox"></div>
+  </aside>
+
+  <nav id="tabs" class="tabs"></nav>
+
+  <!-- Оверлей боя -->
+  <div id="combat" class="combat-overlay">
+    <div class="combat-window">
+      <div class="combat-title">⚔️ Поле боя</div>
+      <div id="combat-body"></div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
