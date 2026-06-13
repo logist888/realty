@@ -229,27 +229,37 @@ function itemImgPath(it) {
   else if (['head', 'body', 'shield'].includes(it.slot)) prefix = 'armor';
   else if (['ring', 'amulet', 'earring'].includes(it.slot)) prefix = 'jewelry';
   else if (['эликсир', 'зелье', 'мазь'].includes(it.type)) prefix = 'potion';
-  return `img/items/${prefix}_${artSlug(it.name)}.png`;
+  return `img/items/${prefix}_${artSlug(it.name)}`;
 }
 
-// обёртка: SVG-заглушка снизу, PNG сверху (если загрузится)
-function artFrame(src, svg, cls) {
-  return `<span class="artframe ${cls || ''}">${svg}<img alt="" loading="lazy" src="${src}" onerror="this.remove()"></span>`;
+// обёртка: SVG-заглушка снизу, картинка сверху. Пробуем расширения по порядку
+// (exts), если ни одного файла нет — остаётся SVG-заглушка.
+function artFrame(base, svg, cls, exts) {
+  exts = exts || ['png', 'jpg'];
+  const rest = exts.slice(1).join(',');
+  return `<span class="artframe ${cls || ''}">${svg}<img alt="" loading="lazy" src="${base}.${exts[0]}" data-base="${base}" data-exts="${rest}" onerror="artImgFallback(this)"></span>`;
+}
+function artImgFallback(img) {
+  const rest = (img.dataset.exts || '').split(',').filter(Boolean);
+  if (rest.length) { img.dataset.exts = rest.slice(1).join(','); img.src = img.dataset.base + '.' + rest[0]; }
+  else img.remove();
 }
 
-// Публичные функции, которые вызывает ui.js (PNG с фолбэком на SVG):
+// Публичные функции, которые вызывает ui.js (картинка с фолбэком на SVG).
+// Фоны/башня сейчас в .jpg (оптимизированы) — пробуем jpg первым;
+// мобы/предметы из ChatGPT обычно .png — для них png первым.
 function worldBg(i, loc) {
   const name = WORLDS[i] ? WORLDS[i].name : '';
-  const src = `img/worlds/world_${String(i + 1).padStart(2, '0')}_${artSlug(name)}.png`;
-  return artFrame(src, worldBgSvg(i, loc), 'af-bg');
+  const base = `img/worlds/world_${String(i + 1).padStart(2, '0')}_${artSlug(name)}`;
+  return artFrame(base, worldBgSvg(i, loc), 'af-bg', ['jpg', 'png']);
 }
 function mobArt(name, opts) {
   const base = String(name).replace(' ⭐', '');
-  return artFrame(`img/mobs/${artSlug(base)}.png`, mobArtSvg(name, opts), 'af-mob');
+  return artFrame(`img/mobs/${artSlug(base)}`, mobArtSvg(name, opts), 'af-mob');
 }
 function itemArt(it) { return artFrame(itemImgPath(it), itemArtSvg(it), 'af-item'); }
-function towerArt() { return artFrame('img/tower/banner.png', towerArtSvg(), 'af-bg'); }
-// иконка здания башни: PNG (если есть) поверх эмодзи
+function towerArt() { return artFrame('img/tower/banner', towerArtSvg(), 'af-bg', ['jpg', 'png']); }
+// иконка здания башни: картинка (если есть) поверх эмодзи
 function buildingArt(name, emoji) {
-  return artFrame(`img/tower/${artSlug(name)}.png`, `<span class="bemoji">${emoji}</span>`, 'af-build');
+  return artFrame(`img/tower/${artSlug(name)}`, `<span class="bemoji">${emoji}</span>`, 'af-build', ['jpg', 'png']);
 }
