@@ -39,7 +39,7 @@ i{color:var(--muted)}
 /* bars */
 .bar{position:relative; height:16px; background:#120d08; border:1px solid var(--line);
   border-radius:8px; overflow:hidden; margin:3px 0}
-.bar .fill{height:100%; transition:width .25s}
+.bar .fill{height:100%; transition:width .25s; background:linear-gradient(90deg,#9c7a2e,var(--gold))}
 .bar.hp .fill{background:linear-gradient(90deg,#7a2b22,var(--hp))}
 .bar.mp .fill{background:linear-gradient(90deg,#23477a,var(--mp))}
 .bar.xp .fill{background:linear-gradient(90deg,#3c6b2e,var(--xp))}
