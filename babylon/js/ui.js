@@ -57,7 +57,7 @@ function viewTower() {
     <div class="grid build-grid">
       ${TOWER_BUILDINGS.map((b) => `
         <button class="build" onclick="setView('${b.id}')">
-          <div class="bicon">${b.icon}</div>
+          <div class="bicon">${buildingArt(b.name, b.icon)}</div>
           <div class="bname">${b.name}</div>
           <div class="bdesc">${esc(b.desc)}</div>
         </button>`).join('')}

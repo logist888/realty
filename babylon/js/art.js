@@ -54,7 +54,7 @@ function worldTheme(i) { return WORLD_THEMES[i] || WORLD_THEMES[0]; }
 // ----------------------------------------------------------------------------
 // Фон-баннер мира (320x120)
 // ----------------------------------------------------------------------------
-function worldBg(worldIndex, locName) {
+function worldBgSvg(worldIndex, locName) {
   const t = worldTheme(worldIndex);
   const rng = artRng(artHash((WORLDS[worldIndex] ? WORLDS[worldIndex].name : '') + '|' + (locName || '')));
   const W = 320, H = 120;
@@ -101,7 +101,7 @@ function worldBg(worldIndex, locName) {
 // ----------------------------------------------------------------------------
 // Аватар моба (100x100)
 // ----------------------------------------------------------------------------
-function mobArt(name, opts) {
+function mobArtSvg(name, opts) {
   opts = opts || {};
   const rng = artRng(artHash(name));
   const hue = Math.floor(rng() * 360);
@@ -163,7 +163,7 @@ function eye(x, y, c) { return `<circle cx="${x}" cy="${y}" r="5" fill="${c}"/><
 // ----------------------------------------------------------------------------
 // Иконка предмета (100x100)
 // ----------------------------------------------------------------------------
-function itemArt(it) {
+function itemArtSvg(it) {
   const wrap = (inner) => `<svg viewBox="0 0 100 100" class="art-item" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
   const steel = '#b9c2cc', steelD = '#7d8893', wood = '#8a5a2b', gold = '#e7c14a', leath = '#9a6b3a';
   const name = (it.name || '').toLowerCase();
@@ -201,7 +201,7 @@ function itemArt(it) {
 }
 
 // иконка ресурса в виде эмодзи остаётся в data.js; здесь — баннер башни
-function towerArt() {
+function towerArtSvg() {
   return `<svg viewBox="0 0 320 120" class="art-bg" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="towerSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3a5a"/><stop offset="1" stop-color="#caa86a"/></linearGradient></defs>
     <rect width="320" height="120" fill="url(#towerSky)"/>
@@ -210,4 +210,46 @@ function towerArt() {
     <polygon points="160,6 150,24 170,24" fill="#8a6a36"/>
     <rect x="0" y="112" width="320" height="8" fill="#5a4424"/>
   </svg>`;
+}
+
+// ============================================================================
+// Загрузчик реальных артов: PNG поверх процедурной SVG-заглушки.
+// Если файл картинки есть в img/... — он показывается; если нет (onerror) —
+// остаётся SVG. Имена файлов совпадают с babylon/ART_PROMPTS.md.
+// ============================================================================
+const ART_TRANSLIT = { а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',' ':'_','-':'_' };
+function artSlug(s) {
+  return String(s).toLowerCase().split('').map((c) => (ART_TRANSLIT[c] !== undefined ? ART_TRANSLIT[c] : (/[a-z0-9_]/.test(c) ? c : '')))
+    .join('').replace(/_+/g, '_').replace(/^_|_$/g, '');
+}
+
+function itemImgPath(it) {
+  let prefix = 'item';
+  if (it.slot === 'weapon') prefix = 'weapon';
+  else if (['head', 'body', 'shield'].includes(it.slot)) prefix = 'armor';
+  else if (['ring', 'amulet', 'earring'].includes(it.slot)) prefix = 'jewelry';
+  else if (['эликсир', 'зелье', 'мазь'].includes(it.type)) prefix = 'potion';
+  return `img/items/${prefix}_${artSlug(it.name)}.png`;
+}
+
+// обёртка: SVG-заглушка снизу, PNG сверху (если загрузится)
+function artFrame(src, svg, cls) {
+  return `<span class="artframe ${cls || ''}">${svg}<img alt="" loading="lazy" src="${src}" onerror="this.remove()"></span>`;
+}
+
+// Публичные функции, которые вызывает ui.js (PNG с фолбэком на SVG):
+function worldBg(i, loc) {
+  const name = WORLDS[i] ? WORLDS[i].name : '';
+  const src = `img/worlds/world_${String(i + 1).padStart(2, '0')}_${artSlug(name)}.png`;
+  return artFrame(src, worldBgSvg(i, loc), 'af-bg');
+}
+function mobArt(name, opts) {
+  const base = String(name).replace(' ⭐', '');
+  return artFrame(`img/mobs/${artSlug(base)}.png`, mobArtSvg(name, opts), 'af-mob');
+}
+function itemArt(it) { return artFrame(itemImgPath(it), itemArtSvg(it), 'af-item'); }
+function towerArt() { return artFrame('img/tower/banner.png', towerArtSvg(), 'af-bg'); }
+// иконка здания башни: PNG (если есть) поверх эмодзи
+function buildingArt(name, emoji) {
+  return artFrame(`img/tower/${artSlug(name)}.png`, `<span class="bemoji">${emoji}</span>`, 'af-build');
 }
