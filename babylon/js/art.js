@@ -255,7 +255,7 @@ function worldBg(i, loc) {
 }
 function mobArt(name, opts) {
   const base = String(name).replace(' ⭐', '');
-  return artFrame(`img/mobs/${artSlug(base)}`, mobArtSvg(name, opts), 'af-mob');
+  return artFrame(`img/mobs/${artSlug(base)}`, mobArtSvg(name, opts), 'af-mob', ['jpg', 'png']);
 }
 function itemArt(it) { return artFrame(itemImgPath(it), itemArtSvg(it), 'af-item'); }
 function towerArt() { return artFrame('img/tower/banner', towerArtSvg(), 'af-bg', ['jpg', 'png']); }
