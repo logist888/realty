@@ -135,6 +135,22 @@ select{background:#1a130c; color:var(--txt); border:1px solid var(--line); borde
 /* academy / quests */
 .academy-row{padding:.4em 0; border-bottom:1px dashed #2a2016; font-size:.85rem; opacity:.6}
 .academy-row.seen{opacity:1}
+
+/* энциклопедия */
+.enc-search{width:100%; box-sizing:border-box; margin:.4em 0 .8em; padding:.6em .8em; border-radius:8px;
+  border:1px solid var(--line); background:#1a130c; color:var(--txt); font-family:inherit; font-size:.95rem}
+.enc-list{display:flex; flex-direction:column; gap:.4em}
+.enc{background:var(--panel2); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.enc>summary{cursor:pointer; padding:.6em .8em; font-weight:700; color:var(--gold2); list-style:none}
+.enc>summary::-webkit-details-marker{display:none}
+.enc>summary::before{content:'▸ '; color:var(--gold)}
+.enc[open]>summary::before{content:'▾ '}
+.enc[open]>summary{border-bottom:1px solid var(--line)}
+.enc-body{padding:.6em .9em; font-size:.86rem; line-height:1.55}
+.enc-body p{margin:.4em 0}
+.enc-ul{margin:.3em 0; padding-left:1.1em}
+.enc-ul li{margin:.25em 0}
+.enc-sub{margin:.5em 0; padding-left:.4em; border-left:2px solid var(--line)}
 .quest{background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:.6rem; margin:.5em 0}
 .quest.done{border-color:var(--xp)}
 .q-desc{font-size:.82rem; color:var(--muted); margin:.2em 0}

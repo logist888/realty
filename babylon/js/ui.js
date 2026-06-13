@@ -269,9 +269,20 @@ function viewAcademy() {
       <div>${seen ? w.locations.map((l) => `${l[0]} — ${l[1].join(', ')}`).join('; ') : '<i>Terra Incognita — мир ещё не исследован</i>'}</div>
     </div>`;
   }).join('');
+
+  const enc = buildEncyclopedia().map((s) => `
+    <details class="enc" data-text="${esc(s.plain)}">
+      <summary>${s.icon} ${esc(s.title)}</summary>
+      <div class="enc-body">${s.body}</div>
+    </details>`).join('');
+
   return `<div class="panel">
-    <h2>📚 Академия</h2>
-    <p class="muted">База знаний формируется по мере исследования миров. Посещено локаций: <b>${visited}</b>. Убито мобов: <b>${player.counters.kills}</b>. Создано вещей: <b>${player.counters.crafted}</b>.</p>
+    <h2>📚 Академия — Энциклопедия</h2>
+    <p class="muted">Ответы на вопросы об устройстве мира и механиках. Найдите тему или раскройте раздел.</p>
+    <input id="encSearch" class="enc-search" type="search" placeholder="🔎 Поиск по энциклопедии (статы, топливо, заклинания…)" oninput="encFilter(this.value)">
+    <div id="encList" class="enc-list">${enc}</div>
+    <h3>Исследование мира</h3>
+    <p class="muted">Посещено локаций: <b>${visited}</b> · Убито мобов: <b>${player.counters.kills}</b> · Создано вещей: <b>${player.counters.crafted}</b>.</p>
     ${worlds}
   </div>`;
 }
