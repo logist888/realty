@@ -208,8 +208,24 @@ function viewStairs() {
   </div>`;
 }
 
+function _oppCardHtml(opp) {
+  return `<div class="pvp-card">
+    <div class="pvp-card-info">
+      <b>${esc(opp.name)}</b>${opp.isBot ? ' <span class="bot-tag">🤖</span>' : ''}
+      <span class="muted">Уровень ${opp.xpLevel} · Опасность ${opp.danger}</span>
+      <span class="muted">HP ${opp.maxHp} · Урон ${opp.dmgMin}–${opp.dmgMax} · Броня ${opp.armor}</span>
+    </div>
+    <button class="mini" onclick="challengeOpponent(${JSON.stringify(JSON.stringify(opp))})">⚔️ Атаковать</button>
+  </div>`;
+}
+
 function viewArena() {
   const pvp = player.pvp || { wins: 0, losses: 0 };
+  // Рендерим ботов синхронно сразу — никаких спиннеров, арена всегда заполнена
+  const initList = _mixOpponents([]);
+  const initHtml = initList.length
+    ? initList.map(_oppCardHtml).join('')
+    : '<span class="muted">Соперники не найдены</span>';
   return `<div class="panel">
     <h2>⚔️ Арена</h2>
     <div class="pvp-stats">
@@ -218,7 +234,7 @@ function viewArena() {
     </div>
     <h3>⚔️ Соперники</h3>
     <p class="muted">Бойцы рядом с тобой по силе. Бой авто-расчётный — победа даёт золото и опыт.</p>
-    <div id="pvp-opponents"><span class="muted">⏳ Поиск соперников…</span></div>
+    <div id="pvp-opponents">${initHtml}</div>
     <h3>🤖 Тренировочный бой</h3>
     <p class="muted">Бой с тёмным двойником ради опыта.</p>
     <button class="big" onclick="startArena()">Выйти на бой с двойником</button>
@@ -270,6 +286,8 @@ function challengeOpponent(dataJson) {
     }).catch(() => {});
   }
 
+  // render() сначала — обновляет HUD, лог, статы. Потом поверх ставим результат боя.
+  render();
   const el = document.getElementById('pvp-opponents');
   if (!el) return;
   el.innerHTML = `<div class="pvp-result ${won ? 'win' : 'lose'}">
@@ -277,9 +295,8 @@ function challengeOpponent(dataJson) {
     <div class="pvp-result-vs">vs <b>${esc(opp.name)}</b></div>
     <div class="pvp-log">${log.map(l => `<div>${esc(l)}</div>`).join('')}</div>
     <div class="pvp-rewards">Золото: ${goldReward > 0 ? '+' : ''}${goldReward} · XP: +${xpReward}</div>
-    <button class="mini" onclick="loadPvpOpponents()">Найти ещё соперника</button>
+    <button class="mini" onclick="render()">Найти ещё соперника</button>
   </div>`;
-  render();
 }
 
 // Смешиваем реальных игроков (с сервера) с ботами, ближайшими по силе,
@@ -287,12 +304,16 @@ function challengeOpponent(dataJson) {
 function _mixOpponents(real) {
   const out = [];
   const seen = new Set();
-  (real || []).forEach((o) => {
-    if (o && !seen.has(String(o.userId))) { seen.add(String(o.userId)); out.push(o); }
-  });
-  if (out.length < 6 && typeof BOTS !== 'undefined') {
-    const pool = BOTS.slice()
-      .sort((a, b) => Math.abs(a.danger - player.danger) - Math.abs(b.danger - player.danger))
+  try {
+    (Array.isArray(real) ? real : []).forEach((o) => {
+      if (o && !seen.has(String(o.userId))) { seen.add(String(o.userId)); out.push(o); }
+    });
+  } catch (e) {}
+  const botList = (typeof window !== 'undefined' && window.BOTS) || (typeof BOTS !== 'undefined' ? BOTS : []);
+  if (out.length < 6 && botList.length) {
+    const danger = (player && player.danger) || 1;
+    const pool = botList.slice()
+      .sort((a, b) => Math.abs(a.danger - danger) - Math.abs(b.danger - danger))
       .slice(0, 24);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -307,29 +328,22 @@ function _mixOpponents(real) {
   return out.slice(0, 6);
 }
 
+// Подгружает реальных игроков с сервера и добавляет их в начало списка.
+// Боты уже отрисованы синхронно из viewArena() — этот вызов только обновляет
+// список если нашлись живые соперники.
 async function loadPvpOpponents() {
   const el = document.getElementById('pvp-opponents');
   if (!el) return;
-  el.innerHTML = '<span class="muted">⏳ Поиск соперников…</span>';
   const userId = window.TG_USER && window.TG_USER.id;
-  let real = [];
-  if (userId) {
-    try {
-      const r = await fetch(`${CLOUD_URL}/arena/opponents?user_id=${userId}&danger=${player.danger}`);
-      if (r.ok) real = await r.json();
-    } catch (e) { /* нет сети — добьём ботами */ }
-  }
-  const list = _mixOpponents(real);
-  if (!list.length) { el.innerHTML = '<span class="muted">Соперники не найдены</span>'; return; }
-  el.innerHTML = list.map((opp) => `
-    <div class="pvp-card">
-      <div class="pvp-card-info">
-        <b>${esc(opp.name)}</b>${opp.isBot ? ' <span class="bot-tag">🤖</span>' : ''}
-        <span class="muted">Уровень ${opp.xpLevel} · Опасность ${opp.danger}</span>
-        <span class="muted">HP ${opp.maxHp} · Урон ${opp.dmgMin}–${opp.dmgMax} · Броня ${opp.armor}</span>
-      </div>
-      <button class="mini" onclick="challengeOpponent(${JSON.stringify(JSON.stringify(opp))})">⚔️ Атаковать</button>
-    </div>`).join('');
+  if (!userId) return; // вне Telegram — боты и так показаны
+  try {
+    const r = await fetch(`${CLOUD_URL}/arena/opponents?user_id=${userId}&danger=${player.danger}`);
+    if (!r.ok) return;
+    const real = await r.json();
+    if (!Array.isArray(real) || !real.length) return; // реальных нет — ботов не трогаем
+    const list = _mixOpponents(real);
+    if (list.length) el.innerHTML = list.map(_oppCardHtml).join('');
+  } catch (e) { /* ботов уже показали — ничего не делаем */ }
 }
 
 // ---------------- Мастерские и Лаборатория ----------------
