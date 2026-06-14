@@ -3,6 +3,7 @@
  *
  * Env vars (Cloudflare dashboard → Worker → Settings → Variables):
  *   BOT_TOKEN  — токен бота из BotFather (секрет, не разглашать)
+ *   BOT_HANDLE — username бота без @, например babylongame_bot
  *   ADMIN_KEY  — произвольный секрет для защиты /admin (придумайте сами)
  *
  * KV namespace:
@@ -16,6 +17,24 @@
  */
 
 const ALLOWED_ORIGIN = 'https://logist888.github.io';
+
+// Отправить сообщение пользователю через бот
+async function tgNotify(botToken, botHandle, chatId, html) {
+  try {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: html,
+        parse_mode: 'HTML',
+        reply_markup: JSON.stringify({
+          inline_keyboard: [[{ text: '🎮 Открыть игру', url: `https://t.me/${botHandle}` }]],
+        }),
+      }),
+    });
+  } catch (e) {}
+}
 
 function corsHeaders(origin) {
   const allow = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
@@ -139,6 +158,13 @@ export default {
         const bonusKey = `bonus_${referredBy}`;
         const existingBonus = (await env.SAVES.get(bonusKey, 'json')) || 0;
         await env.SAVES.put(bonusKey, JSON.stringify(existingBonus + 200));
+
+        // Уведомляем пригласившего в Telegram
+        if (env.BOT_TOKEN && env.BOT_HANDLE) {
+          await tgNotify(env.BOT_TOKEN, env.BOT_HANDLE, referredBy,
+            `🎉 <b>Новый игрок!</b>\n${save.name || 'Полубог'} вступил в «Вавилон» по вашей ссылке.\nВы получили <b>+200 🪙</b> золота!`
+          );
+        }
       }
 
       // Сохраняем (TTL 365 дней)
@@ -146,6 +172,37 @@ export default {
         expirationTtl: 60 * 60 * 24 * 365,
       });
 
+      return new Response('OK', { headers });
+    }
+
+    // --- POST /notify  body: { initData, type, payload } ---
+    if (url.pathname === '/notify' && request.method === 'POST') {
+      if (!env.BOT_TOKEN || !env.BOT_HANDLE) {
+        return new Response('Not configured', { status: 503, headers });
+      }
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response('Invalid JSON', { status: 400, headers });
+      }
+      const { initData, type, payload } = body;
+      if (!initData || !type) return new Response('Missing fields', { status: 400, headers });
+
+      const valid = await verifyInitData(initData, env.BOT_TOKEN);
+      if (!valid) return new Response('Unauthorized', { status: 401, headers });
+
+      const params = new URLSearchParams(initData);
+      let userId;
+      try { userId = JSON.parse(params.get('user')).id; } catch {
+        return new Response('Cannot parse user', { status: 400, headers });
+      }
+
+      const templates = {
+        levelup: (p) => `🎖 <b>Уровень ${p.level}!</b>\nВаш герой в «Вавилоне» достиг <b>${p.level} уровня</b>.\n<i>Продолжайте своё путешествие!</i>`,
+      };
+      const fn = templates[type];
+      if (!fn) return new Response('Unknown type', { status: 400, headers });
+
+      await tgNotify(env.BOT_TOKEN, env.BOT_HANDLE, userId, fn(payload || {}));
       return new Response('OK', { headers });
     }
 
