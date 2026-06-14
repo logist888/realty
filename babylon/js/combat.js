@@ -14,9 +14,11 @@ function chance(p) { return Math.random() * 100 < p; }
 
 // --- Генерация моба из мира/имени ---
 function genMob(worldTier, name, difficulty) {
-  const isBoss = BOSS_WORDS.some((w) => name.includes(w));
-  const isCaster = CASTER_WORDS.some((w) => name.includes(w));
-  const isRanged = RANGED_WORDS.some((w) => name.includes(w));
+  // сравнение регистронезависимое: в названиях «дракон» со строчной буквы
+  const lname = name.toLowerCase();
+  const isBoss = BOSS_WORDS.some((w) => lname.includes(w.toLowerCase()));
+  const isCaster = CASTER_WORDS.some((w) => lname.includes(w.toLowerCase()));
+  const isRanged = RANGED_WORDS.some((w) => lname.includes(w.toLowerCase()));
   const diffMult = difficulty / 100; // 0.75 .. 2.0
   const base = 6 + worldTier * 4;
   const bossMult = isBoss ? 2.2 : 1;
