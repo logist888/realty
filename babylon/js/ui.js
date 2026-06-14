@@ -595,6 +595,7 @@ function lootHtml() {
     <div>⭐ Опыт: +${l.xp || 0} · 🪙 Золото: +${l.gold} · 🔥 Искры: +${l.sparks}</div>
     ${res ? `<div>Трофеи: ${res}</div>` : ''}
     ${l.spell ? `<div>📜 Формула заклинания: ${esc(l.spell)}</div>` : ''}
+    ${l.recipe ? `<div>📐 Схема легендарного предмета: ${esc(l.recipe)}</div>` : ''}
   </div>`;
 }
 
