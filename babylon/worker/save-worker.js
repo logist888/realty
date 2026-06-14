@@ -254,6 +254,76 @@ export default {
       return new Response('OK', { headers });
     }
 
+    // --- GET /arena/opponents?user_id=<id> --- соперники близкие по силе
+    if (url.pathname === '/arena/opponents' && request.method === 'GET') {
+      const userId = url.searchParams.get('user_id') || '';
+      const allPlayers = [];
+      let cursor;
+      do {
+        const listed = await env.SAVES.list({ prefix: 'save_', cursor });
+        const entries = await Promise.all(
+          listed.keys.map(async ({ name }) => {
+            const data = await env.SAVES.get(name, 'json');
+            if (!data || name === `save_${userId}`) return null;
+            return {
+              userId: name.slice(5),
+              name: data.name || '—',
+              xpLevel: data.xpLevel || 1,
+              danger: data.danger || 1,
+              maxHp: data.maxHp || 100,
+              dmgMin: data.derived?.dmgMin || 3,
+              dmgMax: data.derived?.dmgMax || 8,
+              armor: data.derived?.armor || 0,
+              defense: data.derived?.defense || 10,
+            };
+          })
+        );
+        allPlayers.push(...entries.filter(Boolean));
+        cursor = listed.list_complete ? undefined : listed.cursor;
+      } while (cursor);
+
+      // Берём игроков ближайших по danger, с лёгким перемешиванием
+      const myDanger = parseInt(url.searchParams.get('danger') || '1');
+      allPlayers.sort((a, b) => Math.abs(a.danger - myDanger) - Math.abs(b.danger - myDanger));
+      const pool = allPlayers.slice(0, 20);
+      pool.sort(() => Math.random() - 0.5);
+
+      return new Response(JSON.stringify(pool.slice(0, 6)), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // --- POST /arena/result  body: { initData, targetId, targetName, won } ---
+    if (url.pathname === '/arena/result' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response('Invalid JSON', { status: 400, headers });
+      }
+      const { initData, targetId, targetName, won } = body;
+      if (!initData || !targetId) return new Response('Missing fields', { status: 400, headers });
+
+      const valid = await verifyInitData(initData, env.BOT_TOKEN);
+      if (!valid) return new Response('Unauthorized', { status: 401, headers });
+
+      const params = new URLSearchParams(initData);
+      let attackerId, attackerName;
+      try {
+        const u = JSON.parse(params.get('user'));
+        attackerId = u.id;
+        attackerName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'Герой';
+      } catch { return new Response('Cannot parse user', { status: 400, headers }); }
+
+      // Уведомляем соперника
+      if (env.BOT_TOKEN && env.BOT_HANDLE) {
+        const msg = won
+          ? `⚔️ <b>${attackerName}</b> атаковал тебя на арене и <b>победил</b>.\nПродолжай тренироваться!`
+          : `🛡 <b>${attackerName}</b> атаковал тебя на арене, но <b>потерпел поражение</b>!\nТвоя защита держится!`;
+        await tgNotify(env.BOT_TOKEN, env.BOT_HANDLE, targetId, msg);
+      }
+
+      return new Response('OK', { headers });
+    }
+
     // --- GET /leaderboard --- топ-10 по уровню XP (публичный)
     if (url.pathname === '/leaderboard' && request.method === 'GET') {
       const players = [];
