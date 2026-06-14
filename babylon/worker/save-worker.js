@@ -149,6 +149,41 @@ export default {
       return new Response('OK', { headers });
     }
 
+    // --- GET /leaderboard --- топ-10 по уровню XP (публичный)
+    if (url.pathname === '/leaderboard' && request.method === 'GET') {
+      const players = [];
+      let cursor;
+      do {
+        const listed = await env.SAVES.list({ prefix: 'save_', cursor });
+        const entries = await Promise.all(
+          listed.keys.map(async ({ name }) => {
+            const data = await env.SAVES.get(name, 'json');
+            if (!data) return null;
+            return {
+              name: data.name || '—',
+              xpLevel: data.xpLevel || 1,
+              xp: data.xp || 0,
+              kills: data.counters?.kills || 0,
+              danger: data.danger || 1,
+            };
+          })
+        );
+        players.push(...entries.filter(Boolean));
+        cursor = listed.list_complete ? undefined : listed.cursor;
+      } while (cursor);
+
+      players.sort((a, b) => (b.xpLevel - a.xpLevel) || (b.xp - a.xp));
+
+      return new Response(JSON.stringify(players.slice(0, 10)), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+          'Cache-Control': 'public, max-age=60',
+        },
+      });
+    }
+
     // --- GET /referrals --- топ-10 рефереров (публичный)
     if (url.pathname === '/referrals' && request.method === 'GET') {
       const referrers = [];
