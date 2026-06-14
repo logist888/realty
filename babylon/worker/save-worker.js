@@ -9,8 +9,9 @@
  *   SAVES — создать в dashboard и привязать к worker под именем SAVES
  *
  * Маршруты:
- *   GET  /save?user_id=<id>          → возвращает JSON сохранения
+ *   GET  /save?user_id=<id>          → возвращает JSON сохранения (+ _pendingBonus/_refCount)
  *   POST /save  body: {initData, save} → верифицирует подпись Telegram, записывает save
+ *   GET  /referrals                  → топ-10 рефереров (публичный)
  *   GET  /admin?key=<ADMIN_KEY>      → список всех игроков (только для админа)
  */
 
@@ -77,8 +78,19 @@ export default {
       if (!userId || !/^\d+$/.test(userId)) {
         return new Response('Bad user_id', { status: 400, headers });
       }
-      const data = await env.SAVES.get(`save_${userId}`);
-      return new Response(data || 'null', {
+      const data = await env.SAVES.get(`save_${userId}`, 'json');
+      if (data) {
+        // Inject pending referral bonus (consume it so it's only delivered once)
+        const bonus = await env.SAVES.get(`bonus_${userId}`, 'json');
+        if (bonus) {
+          data._pendingBonus = bonus;
+          await env.SAVES.delete(`bonus_${userId}`);
+        }
+        // Inject current referral count
+        const refs = await env.SAVES.get(`refs_${userId}`, 'json');
+        if (refs) data._refCount = refs.count || 0;
+      }
+      return new Response(JSON.stringify(data || null), {
         headers: { ...headers, 'Content-Type': 'application/json' },
       });
     }
@@ -110,12 +122,58 @@ export default {
         return new Response('Cannot parse user', { status: 400, headers });
       }
 
+      // Регистрируем реферал один раз (если игрок новый и пришёл по ссылке)
+      const { referredBy, refRegistered } = save;
+      if (referredBy && !refRegistered && String(referredBy) !== String(userId)) {
+        save.refRegistered = true;
+
+        // Увеличиваем счётчик рефералов у пригласившего
+        const refKey = `refs_${referredBy}`;
+        const existingRefs = await env.SAVES.get(refKey, 'json') || { count: 0, name: '' };
+        existingRefs.count = (existingRefs.count || 0) + 1;
+        const referrerSave = await env.SAVES.get(`save_${referredBy}`, 'json');
+        if (referrerSave && referrerSave.name) existingRefs.name = referrerSave.name;
+        await env.SAVES.put(refKey, JSON.stringify(existingRefs));
+
+        // Начисляем 200 золота пригласившему
+        const bonusKey = `bonus_${referredBy}`;
+        const existingBonus = (await env.SAVES.get(bonusKey, 'json')) || 0;
+        await env.SAVES.put(bonusKey, JSON.stringify(existingBonus + 200));
+      }
+
       // Сохраняем (TTL 365 дней)
       await env.SAVES.put(`save_${userId}`, JSON.stringify(save), {
         expirationTtl: 60 * 60 * 24 * 365,
       });
 
       return new Response('OK', { headers });
+    }
+
+    // --- GET /referrals --- топ-10 рефереров (публичный)
+    if (url.pathname === '/referrals' && request.method === 'GET') {
+      const referrers = [];
+      let cursor;
+      do {
+        const listed = await env.SAVES.list({ prefix: 'refs_', cursor });
+        const entries = await Promise.all(
+          listed.keys.map(async ({ name }) => {
+            const data = await env.SAVES.get(name, 'json');
+            return data ? { userId: name.slice(5), ...data } : null;
+          })
+        );
+        referrers.push(...entries.filter(Boolean));
+        cursor = listed.list_complete ? undefined : listed.cursor;
+      } while (cursor);
+
+      referrers.sort((a, b) => (b.count || 0) - (a.count || 0));
+
+      return new Response(JSON.stringify(referrers.slice(0, 10)), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+        },
+      });
     }
 
     // --- GET /admin?key=ADMIN_KEY ---
