@@ -17,10 +17,8 @@
 (вкладка **Actions**) сайт будет доступен по адресу:
 
 ```
-https://<твой-логин>.github.io/realty/
+https://logist888.github.io/the_game_b/
 ```
-
-(для аккаунта `logist888` → `https://logist888.github.io/realty/`)
 
 Открой этот адрес в браузере телефона — игра должна запуститься. Это и есть URL
 для Mini App.
@@ -33,10 +31,10 @@ https://<твой-логин>.github.io/realty/
 
    **Способ A — кнопка-меню (быстрее всего):**
    - `/mybots` → выбери бота → **Bot Settings → Menu Button → Configure menu button**.
-   - Вставь URL Pages (`https://<логин>.github.io/realty/`) и название кнопки, например «Играть».
+   - Вставь URL Pages (`https://logist888.github.io/the_game_b/`) и название кнопки, например «Играть».
 
    **Способ B — отдельное Mini App:**
-   - `/newapp` → выбери бота → задай название, описание, картинку, и **вставь тот же URL**.
+   - `/newapp` → выбери бота → задай название, описание, картинку, и **вставь тот же URL** (`https://logist888.github.io/the_game_b/`).
    - BotFather выдаст ссылку вида `https://t.me/твой_бот/имя_аппа`.
 
 4. Открой своего бота в Telegram, нажми кнопку **«Играть»** (или ссылку Mini App) —
