@@ -206,6 +206,54 @@ export default {
       return new Response('OK', { headers });
     }
 
+    // --- POST /hp-notify  body: { initData, secsUntilFull } ---
+    if (url.pathname === '/hp-notify' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response('Invalid JSON', { status: 400, headers });
+      }
+      const { initData, secsUntilFull } = body;
+      if (!initData || !secsUntilFull) return new Response('Missing fields', { status: 400, headers });
+
+      const valid = await verifyInitData(initData, env.BOT_TOKEN);
+      if (!valid) return new Response('Unauthorized', { status: 401, headers });
+
+      const params = new URLSearchParams(initData);
+      let userId, name;
+      try {
+        const u = JSON.parse(params.get('user'));
+        userId = u.id;
+        name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'Герой';
+      } catch { return new Response('Cannot parse user', { status: 400, headers }); }
+
+      const notifyAt = Date.now() + Math.min(secsUntilFull, 86400) * 1000; // макс 24 ч
+      await env.SAVES.put(`hpnotify_${userId}`, JSON.stringify({ chatId: userId, name, notifyAt }), {
+        expirationTtl: 86400 + 3600,
+      });
+      return new Response('OK', { headers });
+    }
+
+    // --- DELETE /hp-notify  body: { initData } --- отмена уведомления (HP восстановился)
+    if (url.pathname === '/hp-notify' && request.method === 'DELETE') {
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response('Invalid JSON', { status: 400, headers });
+      }
+      const { initData } = body;
+      if (!initData) return new Response('Missing initData', { status: 400, headers });
+
+      const valid = await verifyInitData(initData, env.BOT_TOKEN);
+      if (!valid) return new Response('Unauthorized', { status: 401, headers });
+
+      const params = new URLSearchParams(initData);
+      let userId;
+      try { userId = JSON.parse(params.get('user')).id; } catch {
+        return new Response('Cannot parse user', { status: 400, headers });
+      }
+      await env.SAVES.delete(`hpnotify_${userId}`);
+      return new Response('OK', { headers });
+    }
+
     // --- GET /leaderboard --- топ-10 по уровню XP (публичный)
     if (url.pathname === '/leaderboard' && request.method === 'GET') {
       const players = [];
@@ -301,5 +349,24 @@ export default {
     }
 
     return new Response('Not found', { status: 404, headers });
+  },
+
+  // Cloudflare Cron Trigger — проверяем HP-уведомления (настроить: */10 * * * *)
+  async scheduled(event, env) {
+    if (!env.BOT_TOKEN || !env.BOT_HANDLE) return;
+    const now = Date.now();
+    let cursor;
+    do {
+      const listed = await env.SAVES.list({ prefix: 'hpnotify_', cursor });
+      await Promise.all(listed.keys.map(async ({ name: key }) => {
+        const data = await env.SAVES.get(key, 'json');
+        if (!data || data.notifyAt > now) return;
+        await tgNotify(env.BOT_TOKEN, env.BOT_HANDLE, data.chatId,
+          `❤️ <b>HP восстановлен!</b>\n${data.name}, твой герой в «Вавилоне» полностью восстановил здоровье.\n<i>Самое время продолжить путешествие!</i>`
+        );
+        await env.SAVES.delete(key);
+      }));
+      cursor = listed.list_complete ? undefined : listed.cursor;
+    } while (cursor);
   },
 };
