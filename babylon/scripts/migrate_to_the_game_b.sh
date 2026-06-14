@@ -1,26 +1,38 @@
 #!/usr/bin/env bash
 # Перенос игры «Проект Вавилон» из realty/babylon в отдельный репозиторий the_game_b.
-# Запускать ЛОКАЛЬНО на своём компьютере (там, где есть доступ к обоим репозиториям GitHub).
+# Запускать ЛОКАЛЬНО на своём компьютере.
 #
 # Использование:
 #   1) Сначала забери свежую ветку realty с игрой:
 #        git clone https://github.com/logist888/realty.git
 #        cd realty && git checkout claude/eager-fermi-0el3ws && git pull
 #   2) Из корня этого клона realty запусти:
-#        bash babylon/scripts/migrate_to_the_game_b.sh
+#        bash babylon/scripts/migrate_to_the_game_b.sh <GITHUB_TOKEN>
+#
+#   GitHub токен создаётся тут:
+#   https://github.com/settings/tokens/new
+#   Нужны права: repo (полные) — галочка на «repo» достаточно.
 set -euo pipefail
+
+TOKEN="${1:-}"
+if [[ -z "$TOKEN" ]]; then
+  echo "Использование: bash migrate_to_the_game_b.sh <GITHUB_TOKEN>"
+  echo ""
+  echo "Токен создаётся на: https://github.com/settings/tokens/new"
+  echo "Нужные права: repo (полные права на репозитории)"
+  exit 1
+fi
 
 REALTY_DIR="$(cd "$(dirname "$0")/../.." && pwd)"   # корень realty
 GAME_SRC="$REALTY_DIR/babylon"
-TARGET_URL="https://github.com/logist888/the_game_b.git"
+TARGET_URL="https://${TOKEN}@github.com/logist888/the_game_b.git"
 WORK="$(mktemp -d)"
 
-echo "→ Клонирую $TARGET_URL ..."
+echo "→ Клонирую the_game_b ..."
 git clone "$TARGET_URL" "$WORK/the_game_b"
 cd "$WORK/the_game_b"
 
 echo "→ Копирую файлы игры в корень нового репозитория ..."
-# копируем всё из babylon/, кроме служебных каталогов
 rsync -a --exclude '.git' --exclude 'scripts/migrate_to_the_game_b.sh' "$GAME_SRC"/ ./
 
 echo "→ Создаю Pages-workflow для деплоя из корня ..."
